@@ -60,38 +60,14 @@ class DocumentModel {
     this.url,
     this.status = 'pending',
   });
-
-  DocumentModel copyWith({
-    String? type,
-    String? displayName,
-    File? file,
-    String? url,
-    String? status,
-  }) {
-    return DocumentModel(
-      type: type ?? this.type,
-      displayName: displayName ?? this.displayName,
-      file: file ?? this.file,
-      url: url ?? this.url,
-      status: status ?? this.status,
-    );
-  }
 }
 
 /// Service for uploading documents to Supabase Storage
-///
-/// Bucket naming convention:
-/// - Single bucket: 'documents' with folder structure: documents/{farmer_id}/file.ext
-/// - Per-farmer bucket: 'farmer-{farmer_id}' (created by backend)
+/// Uses Option 2: Per-farmer buckets (farmer-{uuid})
 class DocumentService {
   final SupabaseClient _supabase = SupabaseConfig.client;
   final FarmerService _farmerService = FarmerService();
 
-  // Bucket configuration
-  // Option 1: Single bucket for all farmers (recommended)
-  static const String _singleBucketName = 'documents';
-
-  // Option 2: Per-farmer bucket prefix
   static const String _farmerBucketPrefix = 'farmer-';
 
   /// Get farmer ID from the farmers table
@@ -100,37 +76,49 @@ class DocumentService {
     return profile?.id;
   }
 
-  /// Get the bucket name for a farmer
-  /// First tries per-farmer bucket, falls back to single bucket
-  Future<String> _getBucketName(String farmerId) async {
-    // Try per-farmer bucket first (created by Django or Edge Function)
-    final perFarmerBucket = '$_farmerBucketPrefix$farmerId';
+  /// Ensure the per-farmer bucket exists.
+  /// Tries to create it if it doesn't exist.
+  Future<String> _ensureBucketExists(String farmerId) async {
+    final bucketName = '$_farmerBucketPrefix$farmerId';
 
     try {
-      // Check if per-farmer bucket exists
-      await _supabase.storage.from(perFarmerBucket).list();
-      debugPrint('DocumentService: Using per-farmer bucket: $perFarmerBucket');
-      return perFarmerBucket;
-    } catch (e) {
-      // Bucket doesn't exist, use single bucket with folders
+      // 1. Try to list files to see if bucket exists and is accessible
+      await _supabase.storage.from(bucketName).list();
       debugPrint(
-          'DocumentService: Per-farmer bucket not found, using $_singleBucketName');
-      return _singleBucketName;
+          'DocumentService: Bucket $bucketName exists and is accessible.');
+      return bucketName;
+    } catch (e) {
+      debugPrint(
+          'DocumentService: Bucket $bucketName inaccessible or missing. trying to create...');
+
+      // 2. Try to create the bucket
+      try {
+        await _supabase.storage.createBucket(
+          bucketName,
+          const BucketOptions(
+            public: true,
+            fileSizeLimit: '10485760', // 10MB
+            allowedMimeTypes: ['image/*', 'application/pdf'],
+          ),
+        );
+        debugPrint('DocumentService: Successfully created bucket $bucketName');
+        return bucketName;
+      } catch (createError) {
+        debugPrint(
+            'DocumentService: Failed to create bucket $bucketName - $createError');
+
+        // 3. Fallback/Error reporting
+        // If creation fails (likely due to permissions), we verify if it really doesn't exist
+        // or if we just can't list/create it.
+        // We throw a clear error asking for manual creation.
+        throw Exception(
+            'Bucket "$bucketName" not found and could not be created automatically.\n'
+            'Please create a Public bucket named "$bucketName" in your Supabase Dashboard.');
+      }
     }
   }
 
-  /// Get the storage path for a document
-  String _getStoragePath(String bucketName, String farmerId, String fileName) {
-    if (bucketName == _singleBucketName) {
-      // Single bucket - use folder structure
-      return '$farmerId/$fileName';
-    } else {
-      // Per-farmer bucket - file at root
-      return fileName;
-    }
-  }
-
-  /// Upload all documents to Supabase Storage
+  /// Upload all documents to the farmer's specific bucket
   Future<Map<String, dynamic>> uploadDocuments(
     Map<String, File> documents, {
     String? otherDocumentName,
@@ -154,10 +142,9 @@ class DocumentService {
       }
     }
 
-    // Get the appropriate bucket
-    final bucketName = await _getBucketName(farmerId);
-    debugPrint(
-        'DocumentService: Using bucket: $bucketName for farmer: $farmerId');
+    // Ensure bucket exists
+    final bucketName = await _ensureBucketExists(farmerId);
+    debugPrint('DocumentService: Uploading to bucket: $bucketName');
 
     final uploadedDocs = <String, String>{};
     final errors = <String>[];
@@ -171,7 +158,9 @@ class DocumentService {
         // Determine file extension
         final ext = file.path.split('.').last.toLowerCase();
         final fileName = '$docType.$ext';
-        final storagePath = _getStoragePath(bucketName, farmerId, fileName);
+
+        // In per-farmer bucket, file is at root
+        final storagePath = fileName;
 
         debugPrint(
             'DocumentService: Uploading $docType to $bucketName/$storagePath');
@@ -239,21 +228,16 @@ class DocumentService {
       return [];
     }
 
+    final bucketName = '$_farmerBucketPrefix$farmerId';
     final documents = <DocumentModel>[];
-    final bucketName = await _getBucketName(farmerId);
-    final folderPath = bucketName == _singleBucketName ? farmerId : '';
 
     try {
-      // List files in the farmer's folder
-      final files =
-          await _supabase.storage.from(bucketName).list(path: folderPath);
+      // List files in the farmer's bucket
+      final files = await _supabase.storage.from(bucketName).list();
 
       for (final file in files) {
         final docType = file.name.split('.').first;
-        final storagePath =
-            folderPath.isNotEmpty ? '$folderPath/${file.name}' : file.name;
-        final url =
-            _supabase.storage.from(bucketName).getPublicUrl(storagePath);
+        final url = _supabase.storage.from(bucketName).getPublicUrl(file.name);
 
         documents.add(DocumentModel(
           type: docType,
@@ -263,26 +247,10 @@ class DocumentService {
         ));
       }
     } catch (e) {
-      debugPrint('DocumentService: Error listing documents - $e');
+      debugPrint(
+          'DocumentService: Error listing documents (Bucket likely missing) - $e');
     }
 
     return documents;
-  }
-
-  /// Delete a document
-  Future<bool> deleteDocument(String docType) async {
-    final farmerId = await _getFarmerId();
-    if (farmerId == null) return false;
-
-    try {
-      final bucketName = await _getBucketName(farmerId);
-      final storagePath = _getStoragePath(bucketName, farmerId, docType);
-
-      await _supabase.storage.from(bucketName).remove([storagePath]);
-      return true;
-    } catch (e) {
-      debugPrint('DocumentService: Error deleting document - $e');
-      return false;
-    }
   }
 }
