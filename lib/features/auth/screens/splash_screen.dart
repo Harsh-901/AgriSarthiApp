@@ -1,0 +1,132 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
+import '../../../core/router/app_router.dart';
+import '../../../core/services/farmer_service.dart';
+import '../../../core/theme/app_theme.dart';
+import '../providers/auth_provider.dart';
+import '../widgets/leaf_logo.dart';
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack),
+      ),
+    );
+
+    _animationController.forward();
+
+    // Navigate after splash
+    _navigateAfterSplash();
+  }
+
+  Future<void> _navigateAfterSplash() async {
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return;
+
+    final authProvider = context.read<AuthProvider>();
+
+    if (authProvider.isAuthenticated) {
+      // Navigate based on role
+      if (authProvider.currentRole == UserRole.admin) {
+        context.go(AppRouter.adminHome);
+      } else {
+        // Check if farmer has completed profile
+        final farmerService = FarmerService();
+        final hasProfile = await farmerService.hasCompletedProfile();
+
+        if (mounted) {
+          if (hasProfile) {
+            context.go(AppRouter.farmerHome);
+          } else {
+            context.go(AppRouter.farmerProfileForm);
+          }
+        }
+      }
+    } else {
+      context.go(AppRouter.welcome);
+    }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Center(
+          child: AnimatedBuilder(
+            animation: _animationController,
+            builder: (context, child) {
+              return Opacity(
+                opacity: _fadeAnimation.value,
+                child: Transform.scale(
+                  scale: _scaleAnimation.value,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const LeafLogo(size: 100),
+                      const SizedBox(height: 32),
+                      Text(
+                        'Yojana Wala',
+                        style:
+                            Theme.of(context).textTheme.displayMedium?.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Something for the one who gives us food',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
