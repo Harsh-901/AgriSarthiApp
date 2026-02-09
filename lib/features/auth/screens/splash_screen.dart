@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/router/app_router.dart';
-import '../../../core/services/farmer_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/leaf_logo.dart';
@@ -58,23 +57,20 @@ class _SplashScreenState extends State<SplashScreen>
     final authProvider = context.read<AuthProvider>();
 
     if (authProvider.isAuthenticated) {
-      // Navigate based on role
+      // User is logged in - check profile status
       if (authProvider.currentRole == UserRole.admin) {
         context.go(AppRouter.adminHome);
       } else {
-        // Check if farmer has completed profile
-        final farmerService = FarmerService();
-        final hasProfile = await farmerService.hasCompletedProfile();
-
-        if (mounted) {
-          if (hasProfile) {
-            context.go(AppRouter.farmerHome);
-          } else {
-            context.go(AppRouter.farmerProfileForm);
-          }
+        // Farmer - check if profile is complete
+        if (authProvider.isProfileComplete) {
+          context.go(AppRouter.farmerHome);
+        } else {
+          // Profile not complete - go to profile form
+          context.go(AppRouter.farmerProfileForm);
         }
       }
     } else {
+      // Not logged in - go to welcome
       context.go(AppRouter.welcome);
     }
   }

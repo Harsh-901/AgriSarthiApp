@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/supabase_config.dart';
 
@@ -11,8 +12,6 @@ class FarmerProfile {
   final double landSize;
   final String primaryCrop;
   final String preferredLanguage;
-  final String? userId;
-  final DateTime? createdAt;
 
   FarmerProfile({
     this.id,
@@ -24,8 +23,6 @@ class FarmerProfile {
     required this.landSize,
     required this.primaryCrop,
     required this.preferredLanguage,
-    this.userId,
-    this.createdAt,
   });
 
   Map<String, dynamic> toJson() {
@@ -38,7 +35,6 @@ class FarmerProfile {
       'land_size': landSize,
       'crop_type': primaryCrop,
       'language': preferredLanguage,
-      // 'user_id': userId ?? SupabaseConfig.currentUser?.id,
     };
   }
 
@@ -53,100 +49,133 @@ class FarmerProfile {
       landSize: (json['land_size'] ?? 0).toDouble(),
       primaryCrop: json['crop_type'] ?? '',
       preferredLanguage: json['language'] ?? '',
-      // userId: json['user_id'],
-      // createdAt: json['created_at'] != null
-      //     ? DateTime.parse(json['created_at'])
-      //     : null,
     );
   }
+
+  bool get isComplete =>
+      fullName.isNotEmpty && state.isNotEmpty && village.isNotEmpty;
 }
 
+/// FarmerService that uses Supabase directly for profile management
+/// Uses phone number as the unique identifier
 class FarmerService {
-  final SupabaseClient _client = SupabaseConfig.client;
+  final SupabaseClient _supabase = SupabaseConfig.client;
 
-  // Table name in Supabase
-  static const String _tableName = 'farmers';
+  /// Get 10-digit phone number from Supabase user
+  String? _getPhoneFromUser() {
+    final user = _supabase.auth.currentUser;
+    if (user == null || user.phone == null) return null;
 
-  // Create or update farmer profile
-  Future<FarmerProfile?> saveFarmerProfile(FarmerProfile profile) async {
+    String phone = user.phone!;
+    // Remove country code
+    if (phone.startsWith('+91')) {
+      phone = phone.substring(3);
+    } else if (phone.startsWith('+')) {
+      // Remove any other country code (last 10 digits)
+      if (phone.length > 10) {
+        phone = phone.substring(phone.length - 10);
+      }
+    }
+    return phone;
+  }
+
+  /// Get current user's farmer profile from Supabase
+  Future<FarmerProfile?> getFarmerProfile() async {
     try {
-      final userId = SupabaseConfig.currentUser?.id;
-      if (userId == null) {
-        throw Exception('User not authenticated');
+      final phone = _getPhoneFromUser();
+      if (phone == null) {
+        debugPrint('FarmerService: No phone number for current user');
+        return null;
       }
 
-      // Check if profile already exists
-      final existingProfile = await getFarmerProfile();
+      debugPrint('FarmerService: Looking for farmer with phone=$phone');
 
-      if (existingProfile != null) {
+      final response = await _supabase
+          .from('farmers')
+          .select()
+          .eq('phone', phone)
+          .maybeSingle();
+
+      if (response != null) {
+        debugPrint('FarmerService: Found existing profile');
+        return FarmerProfile.fromJson(response);
+      }
+
+      debugPrint('FarmerService: No existing profile found');
+      return null;
+    } on PostgrestException catch (e) {
+      debugPrint('FarmerService: PostgrestException - ${e.message}');
+      return null;
+    } catch (e) {
+      debugPrint('FarmerService: Error getting profile - $e');
+      return null;
+    }
+  }
+
+  /// Save or update farmer profile in Supabase
+  /// Uses phone as the unique identifier
+  Future<FarmerProfile?> saveFarmerProfile(FarmerProfile profile) async {
+    try {
+      final phone = _getPhoneFromUser();
+      if (phone == null) {
+        throw Exception('User not authenticated or no phone number');
+      }
+
+      debugPrint('FarmerService: Saving profile for phone $phone');
+
+      // Check if profile exists
+      final existing = await getFarmerProfile();
+
+      // Ensure the phone in profile matches the authenticated user's phone
+      final data = profile.toJson();
+      data['phone'] = phone; // Always use the authenticated user's phone
+
+      debugPrint('FarmerService: Profile data to save: $data');
+
+      if (existing != null && existing.id != null) {
         // Update existing profile
-        final response = await _client
-            .from(_tableName)
-            .update(profile.toJson())
-            .eq('user_id', userId)
+        debugPrint(
+            'FarmerService: Updating existing profile id=${existing.id}');
+
+        final response = await _supabase
+            .from('farmers')
+            .update(data)
+            .eq('id', existing.id!)
             .select()
             .single();
 
+        debugPrint('FarmerService: Update successful');
         return FarmerProfile.fromJson(response);
       } else {
         // Insert new profile
-        final response = await _client
-            .from(_tableName)
-            .insert(profile.toJson())
-            .select()
-            .single();
+        debugPrint('FarmerService: Inserting new profile');
 
+        final response =
+            await _supabase.from('farmers').insert(data).select().single();
+
+        debugPrint('FarmerService: Insert successful');
         return FarmerProfile.fromJson(response);
       }
+    } on PostgrestException catch (e) {
+      debugPrint('FarmerService: PostgrestException - ${e.message}');
+      debugPrint('FarmerService: Details - ${e.details}');
+      debugPrint('FarmerService: Hint - ${e.hint}');
+      throw Exception('Database error: ${e.message}');
     } catch (e) {
+      debugPrint('FarmerService: Error saving profile - $e');
       throw Exception('Failed to save profile: $e');
     }
   }
 
-  // Get current farmer profile
-  Future<FarmerProfile?> getFarmerProfile() async {
-    try {
-      final userId = SupabaseConfig.currentUser?.id;
-      if (userId == null) {
-        return null;
-      }
-
-      final response = await _client
-          .from(_tableName)
-          .select()
-          .eq('user_id', userId)
-          .maybeSingle();
-
-      if (response != null) {
-        return FarmerProfile.fromJson(response);
-      }
-      return null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  // Check if farmer has completed profile
+  /// Check if farmer has completed profile
   Future<bool> hasCompletedProfile() async {
     final profile = await getFarmerProfile();
-    return profile != null && profile.fullName.isNotEmpty;
+    return profile != null && profile.isComplete;
   }
 
-  // Get farmer by phone number
-  Future<FarmerProfile?> getFarmerByPhone(String phoneNumber) async {
-    try {
-      final response = await _client
-          .from(_tableName)
-          .select()
-          .eq('phone', phoneNumber)
-          .maybeSingle();
-
-      if (response != null) {
-        return FarmerProfile.fromJson(response);
-      }
-      return null;
-    } catch (e) {
-      return null;
-    }
+  /// Get farmer ID for the current user
+  Future<String?> getFarmerId() async {
+    final profile = await getFarmerProfile();
+    return profile?.id;
   }
 }

@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/router/app_router.dart';
-import '../../../core/services/farmer_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/leaf_logo.dart';
@@ -97,17 +96,13 @@ class _FarmerLoginScreenState extends State<FarmerLoginScreen> {
     final success = await authProvider.verifyOtp(otp);
 
     if (success && mounted) {
-      // Check if farmer has completed profile
-      final farmerService = FarmerService();
-      final hasProfile = await farmerService.hasCompletedProfile();
-
-      if (mounted) {
-        if (hasProfile) {
-          context.go(AppRouter.farmerHome);
-        } else {
-          // New farmer - redirect to profile form
-          context.go(AppRouter.farmerProfileForm);
-        }
+      // Check profile status from backend response
+      if (authProvider.isProfileComplete) {
+        // Existing user with complete profile
+        context.go(AppRouter.farmerHome);
+      } else {
+        // New user or incomplete profile - go to profile form
+        context.go(AppRouter.farmerProfileForm);
       }
     } else if (mounted && authProvider.errorMessage != null) {
       _showError(authProvider.errorMessage!);

@@ -12,7 +12,7 @@ class AdminHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
-    
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -53,32 +53,32 @@ class AdminHomeScreen extends StatelessWidget {
                     color: AppColors.secondary,
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Welcome text
                 Text(
                   'Welcome, Admin!',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
                 ),
-                
+
                 const SizedBox(height: 12),
-                
+
                 Text(
                   'You have administrator access.\nManage schemes and verify documents here.',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+                        color: AppColors.textSecondary,
+                      ),
                   textAlign: TextAlign.center,
                 ),
-                
+
                 const SizedBox(height: 48),
-                
+
                 // Admin info card
-                if (authProvider.user != null)
+                if (authProvider.isAuthenticated)
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -97,7 +97,7 @@ class AdminHomeScreen extends StatelessWidget {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                authProvider.user?.email ?? 'Admin email',
+                                'Admin logged in',
                                 style: Theme.of(context).textTheme.bodyLarge,
                               ),
                             ),
@@ -114,9 +114,12 @@ class AdminHomeScreen extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 'Administrator Access',
-                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                  color: AppColors.success,
-                                ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge
+                                    ?.copyWith(
+                                      color: AppColors.success,
+                                    ),
                               ),
                             ),
                           ],

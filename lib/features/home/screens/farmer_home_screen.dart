@@ -12,7 +12,7 @@ class FarmerHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
-    
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -53,32 +53,32 @@ class FarmerHomeScreen extends StatelessWidget {
                     color: AppColors.primary,
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Welcome text
                 Text(
                   'Welcome, Farmer!',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
                 ),
-                
+
                 const SizedBox(height: 12),
-                
+
                 Text(
                   'You have successfully logged in.\nMore features coming soon!',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+                        color: AppColors.textSecondary,
+                      ),
                   textAlign: TextAlign.center,
                 ),
-                
+
                 const SizedBox(height: 48),
-                
+
                 // User info card
-                if (authProvider.user != null)
+                if (authProvider.isAuthenticated)
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -97,9 +97,9 @@ class FarmerHomeScreen extends StatelessWidget {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                authProvider.phoneNumber ?? 
-                                    authProvider.user?.phone ?? 
-                                    'Phone number',
+                                authProvider.displayPhoneNumber.isNotEmpty
+                                    ? authProvider.displayPhoneNumber
+                                    : 'Phone number',
                                 style: Theme.of(context).textTheme.bodyLarge,
                               ),
                             ),
@@ -116,9 +116,12 @@ class FarmerHomeScreen extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 'Verified & Logged In',
-                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                  color: AppColors.success,
-                                ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge
+                                    ?.copyWith(
+                                      color: AppColors.success,
+                                    ),
                               ),
                             ),
                           ],

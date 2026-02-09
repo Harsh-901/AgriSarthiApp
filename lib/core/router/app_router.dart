@@ -8,6 +8,7 @@ import '../../features/auth/screens/admin_login_screen.dart';
 import '../../features/home/screens/farmer_home_screen.dart';
 import '../../features/home/screens/admin_home_screen.dart';
 import '../../features/profile/screens/farmer_profile_form_screen.dart';
+import '../../features/documents/screens/document_upload_screen.dart';
 
 class AppRouter {
   static const String splash = '/';
@@ -15,6 +16,7 @@ class AppRouter {
   static const String farmerLogin = '/farmer-login';
   static const String adminLogin = '/admin-login';
   static const String farmerProfileForm = '/farmer-profile-form';
+  static const String documentUpload = '/document-upload';
   static const String farmerHome = '/farmer-home';
   static const String adminHome = '/admin-home';
 
@@ -45,6 +47,11 @@ class AppRouter {
         path: farmerProfileForm,
         name: 'farmerProfileForm',
         builder: (context, state) => const FarmerProfileFormScreen(),
+      ),
+      GoRoute(
+        path: documentUpload,
+        name: 'documentUpload',
+        builder: (context, state) => const DocumentUploadScreen(),
       ),
       GoRoute(
         path: farmerHome,

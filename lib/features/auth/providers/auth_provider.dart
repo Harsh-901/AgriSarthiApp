@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../../core/config/supabase_config.dart';
+import '../../../core/services/farmer_service.dart';
 
 enum AuthState {
   initial,
@@ -15,67 +18,137 @@ enum UserRole {
   admin,
 }
 
+/// Auth Provider using Supabase Auth for OTP and Supabase DB for farmer profile
 class AuthProvider extends ChangeNotifier {
   AuthState _state = AuthState.initial;
   String? _errorMessage;
   UserRole _currentRole = UserRole.farmer;
   String? _phoneNumber;
-  User? _user;
+  String? _farmerId;
+  bool _isNewUser = false;
+  bool _isProfileComplete = false;
+  User? _supabaseUser;
 
+  // Getters
   AuthState get state => _state;
   String? get errorMessage => _errorMessage;
   UserRole get currentRole => _currentRole;
-  String? get phoneNumber => _phoneNumber ?? _user?.phone;
-  User? get user => _user;
-  bool get isAuthenticated => _user != null;
+  String? get phoneNumber => _phoneNumber;
+  String? get accessToken => SupabaseConfig.currentSession?.accessToken;
+  String? get farmerId => _farmerId;
+  bool get isAuthenticated => _supabaseUser != null;
+  bool get isNewUser => _isNewUser;
+  bool get isProfileComplete => _isProfileComplete;
+  User? get supabaseUser => _supabaseUser;
 
-  // Get display phone number (10 digits only, without country code)
+  final SupabaseClient _supabase = SupabaseConfig.client;
+  final FarmerService _farmerService = FarmerService();
+
+  // Get display phone number (10 digits only)
   String get displayPhoneNumber {
-    final phone = phoneNumber;
+    final phone = _phoneNumber ?? _supabaseUser?.phone;
     if (phone == null || phone.isEmpty) return '';
-    // Remove +91 prefix if present
     if (phone.startsWith('+91')) {
       return phone.substring(3);
     }
-    // Remove any + and first 2 digits (country code)
-    if (phone.startsWith('+') && phone.length > 10) {
+    if (phone.length > 10) {
       return phone.substring(phone.length - 10);
     }
     return phone;
   }
 
-  final SupabaseClient _client = SupabaseConfig.client;
-
   AuthProvider() {
-    _initializeAuth();
+    _loadSession();
+    _listenToSupabaseAuth();
   }
 
-  void _initializeAuth() {
-    // Check for existing session
-    final session = _client.auth.currentSession;
-    if (session != null) {
-      _user = session.user;
-      _phoneNumber = session.user.phone;
-      _state = AuthState.authenticated;
-    }
+  /// Listen to Supabase auth state changes
+  void _listenToSupabaseAuth() {
+    _supabase.auth.onAuthStateChange.listen((data) async {
+      if (data.event == AuthChangeEvent.signedIn && data.session != null) {
+        _supabaseUser = data.session!.user;
+        _phoneNumber = _supabaseUser?.phone;
 
-    // Listen to auth state changes
-    _client.auth.onAuthStateChange.listen((data) {
-      final AuthChangeEvent event = data.event;
-      final Session? session = data.session;
-
-      if (event == AuthChangeEvent.signedIn && session != null) {
-        _user = session.user;
-        _phoneNumber = session.user.phone;
-        _state = AuthState.authenticated;
+        // Check for existing farmer profile
+        await _checkFarmerProfile();
         notifyListeners();
-      } else if (event == AuthChangeEvent.signedOut) {
-        _user = null;
-        _phoneNumber = null;
-        _state = AuthState.initial;
+      } else if (data.event == AuthChangeEvent.signedOut) {
+        _supabaseUser = null;
+        _farmerId = null;
+        _isProfileComplete = false;
         notifyListeners();
       }
     });
+  }
+
+  /// Check if farmer has profile in Supabase
+  Future<void> _checkFarmerProfile() async {
+    try {
+      final profile = await _farmerService.getFarmerProfile();
+      if (profile != null) {
+        _farmerId = profile.id;
+        _isProfileComplete = profile.isComplete;
+        _isNewUser = false;
+      } else {
+        _isNewUser = true;
+        _isProfileComplete = false;
+      }
+    } catch (e) {
+      debugPrint('Error checking farmer profile: $e');
+    }
+  }
+
+  /// Load saved session from SharedPreferences
+  Future<void> _loadSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _farmerId = prefs.getString('farmer_id');
+      _phoneNumber = prefs.getString('phone_number');
+      _isProfileComplete = prefs.getBool('profile_complete') ?? false;
+
+      // Check Supabase session
+      final session = _supabase.auth.currentSession;
+      if (session != null) {
+        _supabaseUser = session.user;
+        _phoneNumber = _supabaseUser?.phone ?? _phoneNumber;
+        _state = AuthState.authenticated;
+
+        // Verify farmer profile
+        await _checkFarmerProfile();
+      }
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Failed to load session: $e');
+    }
+  }
+
+  /// Save session to SharedPreferences
+  Future<void> _saveSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (_farmerId != null) {
+        await prefs.setString('farmer_id', _farmerId!);
+      }
+      if (_phoneNumber != null) {
+        await prefs.setString('phone_number', _phoneNumber!);
+      }
+      await prefs.setBool('profile_complete', _isProfileComplete);
+    } catch (e) {
+      debugPrint('Failed to save session: $e');
+    }
+  }
+
+  /// Clear session
+  Future<void> _clearSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('farmer_id');
+      await prefs.remove('phone_number');
+      await prefs.remove('profile_complete');
+    } catch (e) {
+      debugPrint('Failed to clear session: $e');
+    }
   }
 
   void setRole(UserRole role) {
@@ -83,22 +156,23 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Send OTP to phone number (Farmer Login)
+  /// Send OTP using Supabase Auth (Twilio)
   Future<bool> sendOtp(String phoneNumber) async {
     try {
       _state = AuthState.loading;
       _errorMessage = null;
       notifyListeners();
 
-      // Format phone number to include country code if not present
+      // Format phone with country code
       String formattedPhone = phoneNumber;
       if (!phoneNumber.startsWith('+')) {
-        formattedPhone = '+91$phoneNumber'; // Default to India country code
+        formattedPhone = '+91$phoneNumber';
       }
 
       _phoneNumber = formattedPhone;
 
-      await _client.auth.signInWithOtp(
+      // Use Supabase to send OTP via Twilio
+      await _supabase.auth.signInWithOtp(
         phone: formattedPhone,
       );
 
@@ -118,7 +192,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Verify OTP
+  /// Verify OTP using Supabase
   Future<bool> verifyOtp(String otp) async {
     if (_phoneNumber == null) {
       _errorMessage = 'Phone number not set';
@@ -132,23 +206,29 @@ class AuthProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      final response = await _client.auth.verifyOTP(
+      // Verify OTP with Supabase
+      final response = await _supabase.auth.verifyOTP(
         phone: _phoneNumber!,
         token: otp,
         type: OtpType.sms,
       );
 
-      if (response.user != null) {
-        _user = response.user;
-        _state = AuthState.authenticated;
-        notifyListeners();
-        return true;
-      } else {
+      if (response.user == null) {
         _state = AuthState.error;
         _errorMessage = 'Invalid OTP. Please try again.';
         notifyListeners();
         return false;
       }
+
+      _supabaseUser = response.user;
+
+      // Check for existing farmer profile
+      await _checkFarmerProfile();
+
+      _state = AuthState.authenticated;
+      await _saveSession();
+      notifyListeners();
+      return true;
     } on AuthException catch (e) {
       _state = AuthState.error;
       _errorMessage = e.message;
@@ -162,20 +242,34 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Admin Login with Email/Password
+  /// Update profile completion status
+  void setProfileComplete(bool complete) {
+    _isProfileComplete = complete;
+    _saveSession();
+    notifyListeners();
+  }
+
+  /// Set farmer ID
+  void setFarmerId(String id) {
+    _farmerId = id;
+    _saveSession();
+    notifyListeners();
+  }
+
+  /// Admin Login with Email/Password
   Future<bool> adminLogin(String email, String password) async {
     try {
       _state = AuthState.loading;
       _errorMessage = null;
       notifyListeners();
 
-      final response = await _client.auth.signInWithPassword(
+      final response = await _supabase.auth.signInWithPassword(
         email: email,
         password: password,
       );
 
       if (response.user != null) {
-        _user = response.user;
+        _supabaseUser = response.user;
         _currentRole = UserRole.admin;
         _state = AuthState.authenticated;
         notifyListeners();
@@ -199,29 +293,34 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Sign out
+  /// Sign out
   Future<void> signOut() async {
     try {
-      await _client.auth.signOut();
-      _user = null;
-      _phoneNumber = null;
-      _state = AuthState.initial;
-      _currentRole = UserRole.farmer;
-      notifyListeners();
+      await _supabase.auth.signOut();
     } catch (e) {
-      _errorMessage = 'Sign out failed';
-      notifyListeners();
+      debugPrint('Sign out error: $e');
     }
+
+    _supabaseUser = null;
+    _farmerId = null;
+    _phoneNumber = null;
+    _isNewUser = false;
+    _isProfileComplete = false;
+    _state = AuthState.initial;
+    _currentRole = UserRole.farmer;
+
+    await _clearSession();
+    notifyListeners();
   }
 
-  // Reset state
+  /// Reset state
   void resetState() {
     _state = AuthState.initial;
     _errorMessage = null;
     notifyListeners();
   }
 
-  // Clear error
+  /// Clear error
   void clearError() {
     _errorMessage = null;
     notifyListeners();

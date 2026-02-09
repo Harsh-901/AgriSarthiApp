@@ -41,7 +41,10 @@ class _FarmerProfileFormScreenState extends State<FarmerProfileFormScreen> {
   @override
   void initState() {
     super.initState();
-    _loadExistingProfile();
+    // Delay to ensure context is available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadExistingProfile();
+    });
   }
 
   Future<void> _loadExistingProfile() async {
@@ -128,11 +131,20 @@ class _FarmerProfileFormScreenState extends State<FarmerProfileFormScreen> {
         preferredLanguage: _selectedLanguage!,
       );
 
-      await _farmerService.saveFarmerProfile(profile);
+      final savedProfile = await _farmerService.saveFarmerProfile(profile);
+
+      // Update farmer ID in auth provider if available
+      if (savedProfile?.id != null) {
+        authProvider.setFarmerId(savedProfile!.id!);
+      }
+
+      // Mark profile as complete
+      authProvider.setProfileComplete(true);
 
       if (mounted) {
         _showSuccess('Profile saved successfully!');
-        context.go(AppRouter.farmerHome);
+        // Navigate to document upload screen
+        context.go(AppRouter.documentUpload);
       }
     } catch (e) {
       if (mounted) {
