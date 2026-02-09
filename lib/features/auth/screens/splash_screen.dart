@@ -45,19 +45,35 @@ class _SplashScreenState extends State<SplashScreen>
 
     _animationController.forward();
 
-    // Navigate after splash
-    _navigateAfterSplash();
+    // Navigate after checking auth
+    _checkAuthAndNavigate();
   }
 
-  Future<void> _navigateAfterSplash() async {
+  Future<void> _checkAuthAndNavigate() async {
+    // Minimum splash duration
     await Future.delayed(const Duration(seconds: 2));
 
     if (!mounted) return;
 
     final authProvider = context.read<AuthProvider>();
 
+    // Wait for auth to initialize (max 5 seconds)
+    int attempts = 0;
+    while (!authProvider.isInitialized && attempts < 50) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      attempts++;
+    }
+
+    if (!mounted) return;
+
+    debugPrint(
+        'SplashScreen: Auth initialized=${authProvider.isInitialized}, authenticated=${authProvider.isAuthenticated}');
+
     if (authProvider.isAuthenticated) {
       // User is logged in - check profile status
+      debugPrint(
+          'SplashScreen: Profile complete=${authProvider.isProfileComplete}');
+
       if (authProvider.currentRole == UserRole.admin) {
         context.go(AppRouter.adminHome);
       } else {
@@ -114,6 +130,16 @@ class _SplashScreenState extends State<SplashScreen>
                               color: AppColors.textSecondary,
                             ),
                         textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 48),
+                      // Loading indicator
+                      const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ],
                   ),

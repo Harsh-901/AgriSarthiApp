@@ -1,10 +1,10 @@
-import 'dart:convert';
 import 'dart:io';
-import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
-import '../config/api_config.dart';
+import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../config/supabase_config.dart';
+import 'farmer_service.dart';
 
-/// Document types that match the backend requirements
+/// Document types for farmer verification
 class DocumentType {
   static const String aadhaar = 'aadhaar';
   static const String panCard = 'pan_card';
@@ -14,7 +14,7 @@ class DocumentType {
   static const String bankPassbook = 'bank_passbook';
   static const String other = 'other';
 
-  static const List<String> compulsoryTypes = [
+  static const List<String> compulsory = [
     aadhaar,
     panCard,
     landCertificate,
@@ -45,193 +45,244 @@ class DocumentType {
   }
 }
 
-/// Model for a document
+/// Model for document upload status
 class DocumentModel {
-  final String? id;
-  final String documentType;
-  final String? documentUrl;
-  final File? localFile;
-  final String status; // 'pending', 'uploaded', 'verified', 'rejected'
+  final String type;
+  final String displayName;
+  final File? file;
+  final String? url;
+  final String status; // pending, selected, uploading, uploaded, error
 
   DocumentModel({
-    this.id,
-    required this.documentType,
-    this.documentUrl,
-    this.localFile,
+    required this.type,
+    required this.displayName,
+    this.file,
+    this.url,
     this.status = 'pending',
   });
 
-  factory DocumentModel.fromJson(Map<String, dynamic> json) {
+  DocumentModel copyWith({
+    String? type,
+    String? displayName,
+    File? file,
+    String? url,
+    String? status,
+  }) {
     return DocumentModel(
-      id: json['id']?.toString(),
-      documentType: json['document_type'] ?? '',
-      documentUrl: json['document_url'],
-      status: json['status'] ?? 'uploaded',
+      type: type ?? this.type,
+      displayName: displayName ?? this.displayName,
+      file: file ?? this.file,
+      url: url ?? this.url,
+      status: status ?? this.status,
     );
   }
-
-  bool get hasFile => localFile != null || documentUrl != null;
 }
 
-/// Service to handle document operations with the backend
+/// Service for uploading documents to Supabase Storage
+///
+/// Bucket naming convention:
+/// - Single bucket: 'documents' with folder structure: documents/{farmer_id}/file.ext
+/// - Per-farmer bucket: 'farmer-{farmer_id}' (created by backend)
 class DocumentService {
-  String? _accessToken;
-  String? _farmerId;
+  final SupabaseClient _supabase = SupabaseConfig.client;
+  final FarmerService _farmerService = FarmerService();
 
-  void setAuth(String accessToken, String farmerId) {
-    _accessToken = accessToken;
-    _farmerId = farmerId;
+  // Bucket configuration
+  // Option 1: Single bucket for all farmers (recommended)
+  static const String _singleBucketName = 'documents';
+
+  // Option 2: Per-farmer bucket prefix
+  static const String _farmerBucketPrefix = 'farmer-';
+
+  /// Get farmer ID from the farmers table
+  Future<String?> _getFarmerId() async {
+    final profile = await _farmerService.getFarmerProfile();
+    return profile?.id;
   }
 
-  Map<String, String> get _headers => {
-        'Authorization': 'Bearer $_accessToken',
-        'Content-Type': 'application/json',
-      };
-
-  /// Get all documents for the current farmer
-  Future<List<DocumentModel>> getDocuments() async {
-    if (_accessToken == null) {
-      throw Exception('Not authenticated');
-    }
+  /// Get the bucket name for a farmer
+  /// First tries per-farmer bucket, falls back to single bucket
+  Future<String> _getBucketName(String farmerId) async {
+    // Try per-farmer bucket first (created by Django or Edge Function)
+    final perFarmerBucket = '$_farmerBucketPrefix$farmerId';
 
     try {
-      final response = await http.get(
-        Uri.parse(ApiConfig.documents),
-        headers: _headers,
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true) {
-          final List docs = data['data']['documents'] ?? [];
-          return docs.map((d) => DocumentModel.fromJson(d)).toList();
-        }
-      }
-      return [];
+      // Check if per-farmer bucket exists
+      await _supabase.storage.from(perFarmerBucket).list();
+      debugPrint('DocumentService: Using per-farmer bucket: $perFarmerBucket');
+      return perFarmerBucket;
     } catch (e) {
-      throw Exception('Failed to fetch documents: $e');
+      // Bucket doesn't exist, use single bucket with folders
+      debugPrint(
+          'DocumentService: Per-farmer bucket not found, using $_singleBucketName');
+      return _singleBucketName;
     }
   }
 
-  /// Upload all documents at once
-  /// The backend requires all compulsory documents in a single request
+  /// Get the storage path for a document
+  String _getStoragePath(String bucketName, String farmerId, String fileName) {
+    if (bucketName == _singleBucketName) {
+      // Single bucket - use folder structure
+      return '$farmerId/$fileName';
+    } else {
+      // Per-farmer bucket - file at root
+      return fileName;
+    }
+  }
+
+  /// Upload all documents to Supabase Storage
   Future<Map<String, dynamic>> uploadDocuments(
     Map<String, File> documents, {
-    String? otherDocName,
+    String? otherDocumentName,
   }) async {
-    if (_accessToken == null || _farmerId == null) {
+    final user = _supabase.auth.currentUser;
+    if (user == null) {
       throw Exception('Not authenticated');
     }
 
-    // Check if all compulsory documents are provided
-    final missingDocs = DocumentType.compulsoryTypes
-        .where((type) => !documents.containsKey(type))
-        .toList();
-
-    if (missingDocs.isNotEmpty) {
+    final farmerId = await _getFarmerId();
+    if (farmerId == null) {
       throw Exception(
-          'Missing required documents: ${missingDocs.map((t) => DocumentType.getDisplayName(t)).join(', ')}');
+          'Farmer profile not found. Please complete your profile first.');
     }
 
-    try {
-      final uri = Uri.parse(ApiConfig.farmerDocuments(_farmerId!));
-      final request = http.MultipartRequest('POST', uri);
+    // Validate compulsory documents
+    for (final docType in DocumentType.compulsory) {
+      if (!documents.containsKey(docType)) {
+        throw Exception(
+            'Missing required document: ${DocumentType.getDisplayName(docType)}');
+      }
+    }
 
-      // Add auth header
-      request.headers['Authorization'] = 'Bearer $_accessToken';
+    // Get the appropriate bucket
+    final bucketName = await _getBucketName(farmerId);
+    debugPrint(
+        'DocumentService: Using bucket: $bucketName for farmer: $farmerId');
 
-      // Add each document file
-      for (final entry in documents.entries) {
+    final uploadedDocs = <String, String>{};
+    final errors = <String>[];
+
+    // Upload each document
+    for (final entry in documents.entries) {
+      try {
+        final docType = entry.key;
         final file = entry.value;
-        final mimeType = _getMimeType(file.path);
 
-        request.files.add(
-          await http.MultipartFile.fromPath(
-            entry.key, // field name (document type)
-            file.path,
-            contentType: MediaType.parse(mimeType),
-          ),
-        );
+        // Determine file extension
+        final ext = file.path.split('.').last.toLowerCase();
+        final fileName = '$docType.$ext';
+        final storagePath = _getStoragePath(bucketName, farmerId, fileName);
+
+        debugPrint(
+            'DocumentService: Uploading $docType to $bucketName/$storagePath');
+
+        // Read file bytes
+        final fileBytes = await file.readAsBytes();
+
+        // Upload to Supabase Storage
+        await _supabase.storage.from(bucketName).uploadBinary(
+              storagePath,
+              fileBytes,
+              fileOptions: FileOptions(
+                contentType: _getContentType(ext),
+                upsert: true, // Overwrite if exists
+              ),
+            );
+
+        // Get public URL
+        final url =
+            _supabase.storage.from(bucketName).getPublicUrl(storagePath);
+
+        uploadedDocs[docType] = url;
+        debugPrint('DocumentService: Uploaded $docType successfully');
+      } catch (e) {
+        debugPrint('DocumentService: Error uploading ${entry.key} - $e');
+        errors.add(
+            'Failed to upload ${DocumentType.getDisplayName(entry.key)}: $e');
       }
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      final data = json.decode(response.body);
-
-      if (response.statusCode == 201 && data['success'] == true) {
-        return {
-          'success': true,
-          'message': data['message'] ?? 'Documents uploaded successfully',
-          'documents': (data['data']['documents'] as List?)
-                  ?.map((d) => DocumentModel.fromJson(d))
-                  .toList() ??
-              [],
-        };
-      } else {
-        return {
-          'success': false,
-          'message': data['message'] ?? 'Failed to upload documents',
-        };
-      }
-    } catch (e) {
-      throw Exception('Failed to upload documents: $e');
     }
+
+    if (errors.isNotEmpty && uploadedDocs.isEmpty) {
+      throw Exception(errors.join('\n'));
+    }
+
+    return {
+      'success': uploadedDocs.isNotEmpty,
+      'uploaded': uploadedDocs.length,
+      'total': documents.length,
+      'urls': uploadedDocs,
+      if (errors.isNotEmpty) 'errors': errors,
+    };
   }
 
-  /// Upload a single document (for updating)
-  Future<DocumentModel?> uploadSingleDocument(
-    String documentType,
-    File file,
-  ) async {
-    if (_accessToken == null || _farmerId == null) {
-      throw Exception('Not authenticated');
-    }
-
-    try {
-      final uri = Uri.parse(ApiConfig.documents);
-      final request = http.MultipartRequest('POST', uri);
-
-      request.headers['Authorization'] = 'Bearer $_accessToken';
-
-      final mimeType = _getMimeType(file.path);
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          documentType,
-          file.path,
-          contentType: MediaType.parse(mimeType),
-        ),
-      );
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 201) {
-        final data = json.decode(response.body);
-        if (data['success'] == true && data['data'] != null) {
-          return DocumentModel.fromJson(data['data']);
-        }
-      }
-      return null;
-    } catch (e) {
-      throw Exception('Failed to upload document: $e');
-    }
-  }
-
-  String _getMimeType(String path) {
-    final ext = path.split('.').last.toLowerCase();
-    switch (ext) {
+  /// Get content type for file extension
+  String _getContentType(String ext) {
+    switch (ext.toLowerCase()) {
       case 'jpg':
       case 'jpeg':
         return 'image/jpeg';
       case 'png':
         return 'image/png';
-      case 'webp':
-        return 'image/webp';
       case 'pdf':
         return 'application/pdf';
+      case 'webp':
+        return 'image/webp';
       default:
         return 'application/octet-stream';
+    }
+  }
+
+  /// Get list of uploaded documents for the current farmer
+  Future<List<DocumentModel>> getDocuments() async {
+    final farmerId = await _getFarmerId();
+    if (farmerId == null) {
+      return [];
+    }
+
+    final documents = <DocumentModel>[];
+    final bucketName = await _getBucketName(farmerId);
+    final folderPath = bucketName == _singleBucketName ? farmerId : '';
+
+    try {
+      // List files in the farmer's folder
+      final files =
+          await _supabase.storage.from(bucketName).list(path: folderPath);
+
+      for (final file in files) {
+        final docType = file.name.split('.').first;
+        final storagePath =
+            folderPath.isNotEmpty ? '$folderPath/${file.name}' : file.name;
+        final url =
+            _supabase.storage.from(bucketName).getPublicUrl(storagePath);
+
+        documents.add(DocumentModel(
+          type: docType,
+          displayName: DocumentType.getDisplayName(docType),
+          url: url,
+          status: 'uploaded',
+        ));
+      }
+    } catch (e) {
+      debugPrint('DocumentService: Error listing documents - $e');
+    }
+
+    return documents;
+  }
+
+  /// Delete a document
+  Future<bool> deleteDocument(String docType) async {
+    final farmerId = await _getFarmerId();
+    if (farmerId == null) return false;
+
+    try {
+      final bucketName = await _getBucketName(farmerId);
+      final storagePath = _getStoragePath(bucketName, farmerId, docType);
+
+      await _supabase.storage.from(bucketName).remove([storagePath]);
+      return true;
+    } catch (e) {
+      debugPrint('DocumentService: Error deleting document - $e');
+      return false;
     }
   }
 }

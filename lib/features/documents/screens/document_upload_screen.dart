@@ -335,7 +335,7 @@ class _DocumentUploadScreenState extends State<DocumentUploadScreen> {
                     const SizedBox(height: 8),
 
                     // Document cards
-                    ...DocumentType.compulsoryTypes.map(
+                    ...DocumentType.compulsory.map(
                       (docType) => _buildDocumentCard(docType),
                     ),
 

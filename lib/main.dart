@@ -10,13 +10,19 @@ import 'features/auth/providers/auth_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize Supabase
+
+  // Initialize Supabase with session persistence
   await Supabase.initialize(
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.anonKey,
+    authOptions: const FlutterAuthClientOptions(
+      authFlowType: AuthFlowType.pkce,
+    ),
+    realtimeClientOptions: const RealtimeClientOptions(
+      logLevel: RealtimeLogLevel.info,
+    ),
   );
-  
+
   runApp(const YojanaWalaApp());
 }
 

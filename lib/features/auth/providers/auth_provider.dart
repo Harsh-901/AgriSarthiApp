@@ -10,6 +10,7 @@ enum AuthState {
   loading,
   otpSent,
   authenticated,
+  unauthenticated,
   error,
 }
 
@@ -28,6 +29,7 @@ class AuthProvider extends ChangeNotifier {
   bool _isNewUser = false;
   bool _isProfileComplete = false;
   User? _supabaseUser;
+  bool _isInitialized = false;
 
   // Getters
   AuthState get state => _state;
@@ -40,6 +42,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isNewUser => _isNewUser;
   bool get isProfileComplete => _isProfileComplete;
   User? get supabaseUser => _supabaseUser;
+  bool get isInitialized => _isInitialized;
 
   final SupabaseClient _supabase = SupabaseConfig.client;
   final FarmerService _farmerService = FarmerService();
@@ -58,25 +61,73 @@ class AuthProvider extends ChangeNotifier {
   }
 
   AuthProvider() {
-    _loadSession();
-    _listenToSupabaseAuth();
+    _initializeAuth();
+  }
+
+  /// Initialize auth and restore session
+  Future<void> _initializeAuth() async {
+    try {
+      debugPrint('AuthProvider: Initializing...');
+
+      // Check for existing Supabase session
+      final session = _supabase.auth.currentSession;
+
+      if (session != null) {
+        debugPrint('AuthProvider: Found existing session');
+        _supabaseUser = session.user;
+        _phoneNumber = _supabaseUser?.phone;
+
+        // Load saved data from SharedPreferences
+        await _loadLocalData();
+
+        // Verify farmer profile
+        await _checkFarmerProfile();
+
+        _state = AuthState.authenticated;
+      } else {
+        debugPrint('AuthProvider: No existing session');
+        _state = AuthState.unauthenticated;
+      }
+
+      // Listen for auth changes
+      _listenToSupabaseAuth();
+
+      _isInitialized = true;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('AuthProvider: Init error - $e');
+      _state = AuthState.unauthenticated;
+      _isInitialized = true;
+      notifyListeners();
+    }
   }
 
   /// Listen to Supabase auth state changes
   void _listenToSupabaseAuth() {
     _supabase.auth.onAuthStateChange.listen((data) async {
+      debugPrint('AuthProvider: Auth state changed - ${data.event}');
+
       if (data.event == AuthChangeEvent.signedIn && data.session != null) {
         _supabaseUser = data.session!.user;
         _phoneNumber = _supabaseUser?.phone;
 
         // Check for existing farmer profile
         await _checkFarmerProfile();
+
+        _state = AuthState.authenticated;
+        await _saveLocalData();
         notifyListeners();
       } else if (data.event == AuthChangeEvent.signedOut) {
+        debugPrint('AuthProvider: User signed out');
         _supabaseUser = null;
         _farmerId = null;
         _isProfileComplete = false;
+        _state = AuthState.unauthenticated;
+        await _clearLocalData();
         notifyListeners();
+      } else if (data.event == AuthChangeEvent.tokenRefreshed) {
+        debugPrint('AuthProvider: Token refreshed');
+        _supabaseUser = data.session?.user;
       }
     });
   }
@@ -89,42 +140,33 @@ class AuthProvider extends ChangeNotifier {
         _farmerId = profile.id;
         _isProfileComplete = profile.isComplete;
         _isNewUser = false;
+        debugPrint(
+            'AuthProvider: Found farmer profile - id=${_farmerId}, complete=${_isProfileComplete}');
       } else {
         _isNewUser = true;
         _isProfileComplete = false;
+        debugPrint('AuthProvider: No farmer profile found');
       }
     } catch (e) {
-      debugPrint('Error checking farmer profile: $e');
+      debugPrint('AuthProvider: Error checking farmer profile - $e');
     }
   }
 
-  /// Load saved session from SharedPreferences
-  Future<void> _loadSession() async {
+  /// Load saved data from SharedPreferences
+  Future<void> _loadLocalData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       _farmerId = prefs.getString('farmer_id');
-      _phoneNumber = prefs.getString('phone_number');
       _isProfileComplete = prefs.getBool('profile_complete') ?? false;
-
-      // Check Supabase session
-      final session = _supabase.auth.currentSession;
-      if (session != null) {
-        _supabaseUser = session.user;
-        _phoneNumber = _supabaseUser?.phone ?? _phoneNumber;
-        _state = AuthState.authenticated;
-
-        // Verify farmer profile
-        await _checkFarmerProfile();
-      }
-
-      notifyListeners();
+      debugPrint(
+          'AuthProvider: Loaded local data - farmerId=$_farmerId, profileComplete=$_isProfileComplete');
     } catch (e) {
-      debugPrint('Failed to load session: $e');
+      debugPrint('AuthProvider: Error loading local data - $e');
     }
   }
 
-  /// Save session to SharedPreferences
-  Future<void> _saveSession() async {
+  /// Save data to SharedPreferences
+  Future<void> _saveLocalData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       if (_farmerId != null) {
@@ -134,20 +176,22 @@ class AuthProvider extends ChangeNotifier {
         await prefs.setString('phone_number', _phoneNumber!);
       }
       await prefs.setBool('profile_complete', _isProfileComplete);
+      debugPrint('AuthProvider: Saved local data');
     } catch (e) {
-      debugPrint('Failed to save session: $e');
+      debugPrint('AuthProvider: Error saving local data - $e');
     }
   }
 
-  /// Clear session
-  Future<void> _clearSession() async {
+  /// Clear local data
+  Future<void> _clearLocalData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('farmer_id');
       await prefs.remove('phone_number');
       await prefs.remove('profile_complete');
+      debugPrint('AuthProvider: Cleared local data');
     } catch (e) {
-      debugPrint('Failed to clear session: $e');
+      debugPrint('AuthProvider: Error clearing local data - $e');
     }
   }
 
@@ -171,6 +215,8 @@ class AuthProvider extends ChangeNotifier {
 
       _phoneNumber = formattedPhone;
 
+      debugPrint('AuthProvider: Sending OTP to $formattedPhone');
+
       // Use Supabase to send OTP via Twilio
       await _supabase.auth.signInWithOtp(
         phone: formattedPhone,
@@ -180,11 +226,13 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } on AuthException catch (e) {
+      debugPrint('AuthProvider: Send OTP error - ${e.message}');
       _state = AuthState.error;
       _errorMessage = e.message;
       notifyListeners();
       return false;
     } catch (e) {
+      debugPrint('AuthProvider: Send OTP error - $e');
       _state = AuthState.error;
       _errorMessage = 'Failed to send OTP. Please try again.';
       notifyListeners();
@@ -206,6 +254,8 @@ class AuthProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
+      debugPrint('AuthProvider: Verifying OTP for $_phoneNumber');
+
       // Verify OTP with Supabase
       final response = await _supabase.auth.verifyOTP(
         phone: _phoneNumber!,
@@ -220,21 +270,24 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
+      debugPrint('AuthProvider: OTP verified successfully');
       _supabaseUser = response.user;
 
       // Check for existing farmer profile
       await _checkFarmerProfile();
 
       _state = AuthState.authenticated;
-      await _saveSession();
+      await _saveLocalData();
       notifyListeners();
       return true;
     } on AuthException catch (e) {
+      debugPrint('AuthProvider: Verify OTP error - ${e.message}');
       _state = AuthState.error;
       _errorMessage = e.message;
       notifyListeners();
       return false;
     } catch (e) {
+      debugPrint('AuthProvider: Verify OTP error - $e');
       _state = AuthState.error;
       _errorMessage = 'Verification failed. Please try again.';
       notifyListeners();
@@ -245,14 +298,14 @@ class AuthProvider extends ChangeNotifier {
   /// Update profile completion status
   void setProfileComplete(bool complete) {
     _isProfileComplete = complete;
-    _saveSession();
+    _saveLocalData();
     notifyListeners();
   }
 
   /// Set farmer ID
   void setFarmerId(String id) {
     _farmerId = id;
-    _saveSession();
+    _saveLocalData();
     notifyListeners();
   }
 
@@ -293,12 +346,13 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Sign out
+  /// Sign out - only when user explicitly requests it
   Future<void> signOut() async {
     try {
+      debugPrint('AuthProvider: Signing out...');
       await _supabase.auth.signOut();
     } catch (e) {
-      debugPrint('Sign out error: $e');
+      debugPrint('AuthProvider: Sign out error - $e');
     }
 
     _supabaseUser = null;
@@ -306,10 +360,10 @@ class AuthProvider extends ChangeNotifier {
     _phoneNumber = null;
     _isNewUser = false;
     _isProfileComplete = false;
-    _state = AuthState.initial;
+    _state = AuthState.unauthenticated;
     _currentRole = UserRole.farmer;
 
-    await _clearSession();
+    await _clearLocalData();
     notifyListeners();
   }
 
