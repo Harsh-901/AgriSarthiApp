@@ -7,6 +7,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/leaf_logo.dart';
+import 'package:pinput/pinput.dart';
 
 class FarmerLoginScreen extends StatefulWidget {
   const FarmerLoginScreen({super.key});
@@ -335,50 +336,45 @@ class _FarmerLoginScreenState extends State<FarmerLoginScreen> {
   }
 
   Widget _buildOtpInput() {
-    return TextFormField(
-      controller: _otpController,
-      focusNode: _otpFocusNode,
-      keyboardType: TextInputType.number,
-      textAlign: TextAlign.center,
-      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+    final defaultPinTheme = PinTheme(
+      width: 50,
+      height: 60,
+      textStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
-            letterSpacing: 8,
           ),
-      inputFormatters: [
-        FilteringTextInputFormatter.digitsOnly,
-        LengthLimitingTextInputFormatter(6),
-      ],
-      decoration: InputDecoration(
-        hintText: '------',
-        hintStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: AppColors.textHint,
-              letterSpacing: 8,
-            ),
-        filled: true,
-        fillColor: AppColors.cardBackground,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 20,
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+    );
+
+    return Pinput(
+      length: 6,
+      controller: _otpController,
+      focusNode: _otpFocusNode,
+      defaultPinTheme: defaultPinTheme,
+      focusedPinTheme: defaultPinTheme.copyWith(
+        decoration: defaultPinTheme.decoration!.copyWith(
+          border: Border.all(color: AppColors.primary, width: 2),
         ),
       ),
-      onChanged: (value) {
-        if (value.length == 6) {
-          _verifyOtp();
-        }
+      submittedPinTheme: defaultPinTheme.copyWith(
+        decoration: defaultPinTheme.decoration!.copyWith(
+          color: AppColors.surface,
+          border: Border.all(color: AppColors.success),
+        ),
+      ),
+      pinputAutovalidateMode: PinputAutovalidateMode.onSubmit,
+      showCursor: true,
+      autofocus: true,
+      onCompleted: (pin) {
+        _verifyOtp();
       },
+      inputFormatters: [
+        FilteringTextInputFormatter.digitsOnly,
+      ],
     );
   }
 

@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/config/supabase_config.dart';
+import '../../../core/services/document_service.dart';
 import '../../../core/services/farmer_service.dart';
 
 enum AuthState {
@@ -46,6 +47,7 @@ class AuthProvider extends ChangeNotifier {
 
   final SupabaseClient _supabase = SupabaseConfig.client;
   final FarmerService _farmerService = FarmerService();
+  final DocumentService _documentService = DocumentService();
 
   // Get display phone number (10 digits only)
   String get displayPhoneNumber {
@@ -114,6 +116,9 @@ class AuthProvider extends ChangeNotifier {
         // Check for existing farmer profile
         await _checkFarmerProfile();
 
+        // Create farmer bucket if farmer profile exists
+        await _createFarmerBucket();
+
         _state = AuthState.authenticated;
         await _saveLocalData();
         notifyListeners();
@@ -149,6 +154,29 @@ class AuthProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('AuthProvider: Error checking farmer profile - $e');
+    }
+  }
+
+  /// Create a dedicated storage bucket for the farmer after login.
+  /// Uses Supabase directly (no Django involved).
+  Future<void> _createFarmerBucket() async {
+    if (_farmerId == null) {
+      debugPrint('AuthProvider: No farmer ID yet, skipping bucket creation');
+      return;
+    }
+    try {
+      debugPrint(
+          'AuthProvider: Creating storage bucket for farmer $_farmerId...');
+      final success = await _documentService.createFarmerBucket(_farmerId!);
+      if (success) {
+        debugPrint(
+            'AuthProvider: Bucket created/verified for farmer $_farmerId');
+      } else {
+        debugPrint(
+            'AuthProvider: Failed to create bucket for farmer $_farmerId');
+      }
+    } catch (e) {
+      debugPrint('AuthProvider: Error creating farmer bucket - $e');
     }
   }
 
@@ -275,6 +303,9 @@ class AuthProvider extends ChangeNotifier {
 
       // Check for existing farmer profile
       await _checkFarmerProfile();
+
+      // Create farmer bucket if profile exists
+      await _createFarmerBucket();
 
       _state = AuthState.authenticated;
       await _saveLocalData();

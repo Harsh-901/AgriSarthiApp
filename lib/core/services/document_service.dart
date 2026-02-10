@@ -76,10 +76,71 @@ class DocumentService {
     return profile?.id;
   }
 
+  /// Get bucket name for a farmer
+  static String getBucketName(String farmerId) {
+    return '$_farmerBucketPrefix$farmerId';
+  }
+
+  /// Create a dedicated storage bucket for a farmer.
+  /// This should be called right after the farmer account is created
+  /// (after Supabase OTP login + profile save).
+  ///
+  /// Uses Supabase RPC function 'create_farmer_bucket' which runs with
+  /// SECURITY DEFINER privileges (service-role level) to create the bucket.
+  Future<bool> createFarmerBucket(String farmerId) async {
+    final bucketName = getBucketName(farmerId);
+
+    debugPrint('========== BUCKET CREATION START ==========');
+    debugPrint(
+        'DocumentService: Creating bucket "$bucketName" for farmer "$farmerId"');
+
+    // Step 1: Check if bucket already exists
+    try {
+      await _supabase.storage.from(bucketName).list();
+      debugPrint('DocumentService: ✅ Bucket $bucketName already exists!');
+      return true;
+    } catch (e) {
+      debugPrint(
+          'DocumentService: Bucket does not exist yet (expected). Error: $e');
+    }
+
+    // Step 2: Try RPC function (most reliable - uses SECURITY DEFINER)
+    try {
+      debugPrint('DocumentService: Calling RPC create_farmer_bucket...');
+      final result = await _supabase.rpc('create_farmer_bucket', params: {
+        'farmer_id': farmerId,
+      });
+      debugPrint('DocumentService: ✅ RPC returned: $result');
+      return true;
+    } catch (e) {
+      debugPrint('DocumentService: ❌ RPC failed: $e');
+    }
+
+    // Step 3: Fallback - Try direct bucket creation
+    try {
+      debugPrint('DocumentService: Trying direct createBucket...');
+      await _supabase.storage.createBucket(
+        bucketName,
+        const BucketOptions(
+          public: true,
+          fileSizeLimit: '10485760', // 10MB
+          allowedMimeTypes: ['image/*', 'application/pdf'],
+        ),
+      );
+      debugPrint('DocumentService: ✅ Direct bucket creation succeeded!');
+      return true;
+    } catch (e) {
+      debugPrint('DocumentService: ❌ Direct bucket creation also failed: $e');
+    }
+
+    debugPrint('========== BUCKET CREATION FAILED ==========');
+    return false;
+  }
+
   /// Ensure the per-farmer bucket exists.
   /// Tries to create it if it doesn't exist.
   Future<String> _ensureBucketExists(String farmerId) async {
-    final bucketName = '$_farmerBucketPrefix$farmerId';
+    final bucketName = getBucketName(farmerId);
 
     try {
       // 1. Try to list files to see if bucket exists and is accessible
@@ -89,32 +150,18 @@ class DocumentService {
       return bucketName;
     } catch (e) {
       debugPrint(
-          'DocumentService: Bucket $bucketName inaccessible or missing. trying to create...');
+          'DocumentService: Bucket $bucketName missing. Attempting to create...');
 
-      // 2. Try to create the bucket
-      try {
-        await _supabase.storage.createBucket(
-          bucketName,
-          const BucketOptions(
-            public: true,
-            fileSizeLimit: '10485760', // 10MB
-            allowedMimeTypes: ['image/*', 'application/pdf'],
-          ),
-        );
-        debugPrint('DocumentService: Successfully created bucket $bucketName');
+      // 2. Try to create via RPC first
+      final created = await createFarmerBucket(farmerId);
+      if (created) {
         return bucketName;
-      } catch (createError) {
-        debugPrint(
-            'DocumentService: Failed to create bucket $bucketName - $createError');
-
-        // 3. Fallback/Error reporting
-        // If creation fails (likely due to permissions), we verify if it really doesn't exist
-        // or if we just can't list/create it.
-        // We throw a clear error asking for manual creation.
-        throw Exception(
-            'Bucket "$bucketName" not found and could not be created automatically.\n'
-            'Please create a Public bucket named "$bucketName" in your Supabase Dashboard.');
       }
+
+      // 3. If all fails, throw clear error
+      throw Exception(
+          'Bucket "$bucketName" not found and could not be created automatically.\n'
+          'Please ensure the create_farmer_bucket RPC function exists in your Supabase project.');
     }
   }
 

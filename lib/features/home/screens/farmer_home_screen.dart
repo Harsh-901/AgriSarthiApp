@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/services/farmer_service.dart';
+import '../../../core/services/scheme_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/widgets/leaf_logo.dart';
@@ -18,47 +19,16 @@ class FarmerHomeScreen extends StatefulWidget {
 class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
   int _selectedIndex = 0;
   final FarmerService _farmerService = FarmerService();
+  final SchemeService _schemeService = SchemeService();
   String _farmerName = 'Farmer';
-  bool _isLoading = true;
-
-  // Sample scheme data - replace with actual API data
-  final List<SchemeData> _schemes = [
-    SchemeData(
-      name: 'Pradhan Mantri Fasal Bima Yojana',
-      benefit: '₹ 2 Lakhs Crop Insurance',
-      deadline: '31st March 2024',
-      status: SchemeStatus.open,
-    ),
-    SchemeData(
-      name: 'Kisan Credit Card Scheme',
-      benefit: '₹ 1.6 Lakhs Loan at 4% Interest',
-      deadline: 'Ongoing',
-      status: SchemeStatus.eligible,
-    ),
-    SchemeData(
-      name: 'Soil Health Card Scheme',
-      benefit: 'Free Soil Testing & Report',
-      deadline: '15th April 2024',
-      status: SchemeStatus.closingSoon,
-    ),
-    SchemeData(
-      name: 'PM Kisan Samman Nidhi',
-      benefit: '₹ 6,000 Annual Direct Support',
-      deadline: 'Ongoing',
-      status: SchemeStatus.open,
-    ),
-    SchemeData(
-      name: 'National Food Security Mission',
-      benefit: 'Subsidies for High-Yield Seeds',
-      deadline: '30th June 2024',
-      status: SchemeStatus.open,
-    ),
-  ];
+  bool _isLoadingName = true;
+  late Future<List<SchemeModel>> _schemesFuture;
 
   @override
   void initState() {
     super.initState();
     _loadFarmerName();
+    _schemesFuture = _schemeService.getSchemes();
   }
 
   Future<void> _loadFarmerName() async {
@@ -69,18 +39,18 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
           _farmerName = profile.fullName.isNotEmpty
               ? profile.fullName.split(' ').first // Get first name
               : 'Farmer';
-          _isLoading = false;
+          _isLoadingName = false;
         });
       } else {
         setState(() {
-          _isLoading = false;
+          _isLoadingName = false;
         });
       }
     } catch (e) {
       debugPrint('Error loading farmer name: $e');
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _isLoadingName = false;
         });
       }
     }
@@ -105,7 +75,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
         _showComingSoon('Videos');
         break;
       case 4: // Profile
-        _showComingSoon('Profile');
+        context.push(AppRouter.farmerProfile);
         break;
     }
   }
@@ -137,12 +107,30 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
 
             // Schemes List
             Expanded(
-              child: ListView.builder(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: _schemes.length,
-                itemBuilder: (context, index) =>
-                    _buildSchemeCard(_schemes[index]),
+              child: FutureBuilder<List<SchemeModel>>(
+                future: _schemesFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(
+                      child: Text('Error loading schemes: ${snapshot.error}'),
+                    );
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(
+                      child: Text('No schemes available at the moment.'),
+                    );
+                  }
+
+                  final schemes = snapshot.data!;
+                  return ListView.builder(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    itemCount: schemes.length,
+                    itemBuilder: (context, index) =>
+                        _buildSchemeCard(schemes[index]),
+                  );
+                },
               ),
             ),
           ],
@@ -206,7 +194,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       child: Align(
         alignment: Alignment.centerLeft,
-        child: _isLoading
+        child: _isLoadingName
             ? const SizedBox(
                 height: 32,
                 width: 200,
@@ -223,7 +211,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
     );
   }
 
-  Widget _buildSchemeCard(SchemeData scheme) {
+  Widget _buildSchemeCard(SchemeModel scheme) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -435,21 +423,4 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
       ),
     );
   }
-}
-
-// Data Models
-enum SchemeStatus { open, eligible, closingSoon, closed }
-
-class SchemeData {
-  final String name;
-  final String benefit;
-  final String deadline;
-  final SchemeStatus status;
-
-  SchemeData({
-    required this.name,
-    required this.benefit,
-    required this.deadline,
-    required this.status,
-  });
 }

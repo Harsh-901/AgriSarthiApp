@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/dropdown_data.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/services/document_service.dart';
 import '../../../core/services/farmer_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -20,6 +21,7 @@ class FarmerProfileFormScreen extends StatefulWidget {
 class _FarmerProfileFormScreenState extends State<FarmerProfileFormScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final FarmerService _farmerService = FarmerService();
+  final DocumentService _documentService = DocumentService();
 
   // Controllers
   final TextEditingController _fullNameController = TextEditingController();
@@ -136,6 +138,11 @@ class _FarmerProfileFormScreenState extends State<FarmerProfileFormScreen> {
       // Update farmer ID in auth provider if available
       if (savedProfile?.id != null) {
         authProvider.setFarmerId(savedProfile!.id!);
+
+        // Create Supabase storage bucket for this farmer
+        debugPrint(
+            'ProfileForm: Creating bucket for farmer ${savedProfile.id}');
+        await _documentService.createFarmerBucket(savedProfile.id!);
       }
 
       // Mark profile as complete
