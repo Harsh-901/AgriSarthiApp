@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/services/farmer_service.dart';
 import '../../../core/services/scheme_service.dart';
+import '../../../core/services/application_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/widgets/leaf_logo.dart';
@@ -20,6 +21,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
   int _selectedIndex = 0;
   final FarmerService _farmerService = FarmerService();
   final SchemeService _schemeService = SchemeService();
+  final ApplicationService _applicationService = ApplicationService();
   String _farmerName = 'Farmer';
   bool _isLoadingName = true;
   late Future<List<SchemeModel>> _schemesFuture;
@@ -66,7 +68,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
       case 0: // Home - already here
         break;
       case 1: // Applications
-        _showComingSoon('Applications');
+        context.push(AppRouter.applications);
         break;
       case 2: // Upload Docs
         context.push(AppRouter.documentUpload);
@@ -77,6 +79,109 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
       case 4: // Profile
         context.push(AppRouter.farmerProfile);
         break;
+    }
+  }
+
+  /// Apply for a scheme via Django backend
+  Future<void> _applyForScheme(SchemeModel scheme) async {
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Apply for ${scheme.name}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Would you like to apply for this scheme?',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            if (scheme.benefit.isNotEmpty)
+              Text(
+                'Benefit: ${scheme.benefit}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.success,
+                    ),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Apply Now'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    // Show loading
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(width: 16),
+            Text('Submitting application...'),
+          ],
+        ),
+        duration: Duration(seconds: 10),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.primary,
+      ),
+    );
+
+    // Call Django API to apply
+    final result = await _applicationService.applyToScheme(scheme.id);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+    if (result['success'] == true) {
+      final trackingId = result['data']?['tracking_id'] ?? '';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Application submitted! Tracking ID: $trackingId',
+          ),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'View',
+            textColor: Colors.white,
+            onPressed: () => context.push(AppRouter.applications),
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message'] ?? 'Failed to submit application'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -262,9 +367,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
               const Spacer(),
               // Apply Button
               ElevatedButton(
-                onPressed: () {
-                  _showComingSoon('Apply for ${scheme.name}');
-                },
+                onPressed: () => _applyForScheme(scheme),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
