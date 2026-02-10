@@ -11,6 +11,7 @@ import '../../features/profile/screens/farmer_profile_form_screen.dart';
 import '../../features/documents/screens/document_upload_screen.dart';
 import '../../features/profile/screens/farmer_profile_screen.dart';
 import '../../features/applications/screens/applications_screen.dart';
+import '../../features/schemes/screens/manage_schemes_screen.dart';
 
 class AppRouter {
   static const String splash = '/';
@@ -23,6 +24,7 @@ class AppRouter {
   static const String adminHome = '/admin-home';
   static const String farmerProfile = '/farmer-profile';
   static const String applications = '/applications';
+  static const String manageSchemes = '/manage-schemes';
 
   static final GoRouter router = GoRouter(
     initialLocation: splash,
@@ -76,6 +78,11 @@ class AppRouter {
         path: applications,
         name: 'applications',
         builder: (context, state) => const ApplicationsScreen(),
+      ),
+      GoRoute(
+        path: manageSchemes,
+        name: 'manageSchemes',
+        builder: (context, state) => const ManageSchemesScreen(),
       ),
     ],
   );

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -31,6 +32,9 @@ class AuthProvider extends ChangeNotifier {
   bool _isProfileComplete = false;
   User? _supabaseUser;
   bool _isInitialized = false;
+  bool _isAdminLoggedIn = false;
+  String? _adminName;
+  String? _adminId;
 
   // Getters
   AuthState get state => _state;
@@ -39,7 +43,10 @@ class AuthProvider extends ChangeNotifier {
   String? get phoneNumber => _phoneNumber;
   String? get accessToken => SupabaseConfig.currentSession?.accessToken;
   String? get farmerId => _farmerId;
-  bool get isAuthenticated => _supabaseUser != null;
+  bool get isAuthenticated => _supabaseUser != null || _isAdminLoggedIn;
+  bool get isAdminLoggedIn => _isAdminLoggedIn;
+  String? get adminName => _adminName;
+  String? get adminId => _adminId;
   bool get isNewUser => _isNewUser;
   bool get isProfileComplete => _isProfileComplete;
   User? get supabaseUser => _supabaseUser;
@@ -340,38 +347,74 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Admin Login with Email/Password
+  /// Admin Login using custom admins table (RPC)
   Future<bool> adminLogin(String email, String password) async {
     try {
       _state = AuthState.loading;
       _errorMessage = null;
       notifyListeners();
 
-      final response = await _supabase.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
+      debugPrint('AuthProvider: Admin login attempt for $email');
 
-      if (response.user != null) {
-        _supabaseUser = response.user;
+      // Call the verify_admin_login RPC function
+      final response = await _supabase.rpc('verify_admin_login', params: {
+        'p_email': email.trim(),
+        'p_password': password,
+      });
+
+      debugPrint(
+          'AuthProvider: Admin login raw response type: ${response.runtimeType}');
+      debugPrint('AuthProvider: Admin login raw response: $response');
+
+      // Supabase RPC can return Map or String depending on function return type
+      Map<String, dynamic> result;
+      if (response is Map<String, dynamic>) {
+        result = response;
+      } else if (response is String) {
+        result = Map<String, dynamic>.from(
+          json.decode(response) as Map,
+        );
+      } else {
+        debugPrint(
+            'AuthProvider: Unexpected response type: ${response.runtimeType}');
+        _state = AuthState.error;
+        _errorMessage = 'Unexpected server response';
+        notifyListeners();
+        return false;
+      }
+
+      debugPrint('AuthProvider: Parsed result: $result');
+
+      if (result['success'] == true && result['data'] != null) {
+        final data = Map<String, dynamic>.from(result['data'] as Map);
+        _isAdminLoggedIn = true;
+        _adminId = data['admin_id']?.toString();
+        _adminName = data['name']?.toString() ?? 'Admin';
         _currentRole = UserRole.admin;
         _state = AuthState.authenticated;
+
+        // Save admin state locally
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('is_admin_logged_in', true);
+        await prefs.setString('admin_id', _adminId ?? '');
+        await prefs.setString('admin_name', _adminName ?? 'Admin');
+        await prefs.setString('admin_email', email.trim());
+
+        debugPrint('AuthProvider: Admin login successful! Name: $_adminName');
         notifyListeners();
         return true;
       } else {
         _state = AuthState.error;
-        _errorMessage = 'Login failed. Please check your credentials.';
+        _errorMessage = result['message']?.toString() ?? 'Invalid credentials';
+        debugPrint('AuthProvider: Admin login failed: $_errorMessage');
         notifyListeners();
         return false;
       }
-    } on AuthException catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('AuthProvider: Admin login error: $e');
+      debugPrint('AuthProvider: Stack trace: $stackTrace');
       _state = AuthState.error;
-      _errorMessage = e.message;
-      notifyListeners();
-      return false;
-    } catch (e) {
-      _state = AuthState.error;
-      _errorMessage = 'Login failed. Please try again.';
+      _errorMessage = 'Login failed: ${e.toString()}';
       notifyListeners();
       return false;
     }
@@ -379,11 +422,15 @@ class AuthProvider extends ChangeNotifier {
 
   /// Sign out - only when user explicitly requests it
   Future<void> signOut() async {
-    try {
-      debugPrint('AuthProvider: Signing out...');
-      await _supabase.auth.signOut();
-    } catch (e) {
-      debugPrint('AuthProvider: Sign out error - $e');
+    // Only call Supabase auth signOut if user is NOT admin
+    // (admins don't have Supabase auth sessions)
+    if (!_isAdminLoggedIn) {
+      try {
+        debugPrint('AuthProvider: Signing out from Supabase...');
+        await _supabase.auth.signOut();
+      } catch (e) {
+        debugPrint('AuthProvider: Sign out error - $e');
+      }
     }
 
     _supabaseUser = null;
@@ -391,10 +438,21 @@ class AuthProvider extends ChangeNotifier {
     _phoneNumber = null;
     _isNewUser = false;
     _isProfileComplete = false;
+    _isAdminLoggedIn = false;
+    _adminName = null;
+    _adminId = null;
     _state = AuthState.unauthenticated;
     _currentRole = UserRole.farmer;
 
     await _clearLocalData();
+
+    // Also clear admin-specific prefs
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('is_admin_logged_in');
+    await prefs.remove('admin_id');
+    await prefs.remove('admin_name');
+    await prefs.remove('admin_email');
+
     notifyListeners();
   }
 

@@ -20,7 +20,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   final FocusNode _emailFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  
+
   bool _obscurePassword = true;
 
   @override
@@ -40,7 +40,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
     final authProvider = context.read<AuthProvider>();
     final success = await authProvider.adminLogin(email, password);
-    
+
     if (success && mounted) {
       context.go(AppRouter.adminHome);
     } else if (mounted && authProvider.errorMessage != null) {
@@ -78,15 +78,15 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 60),
-                
+
                 // Login Card
                 _buildLoginCard(),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Back to Farmer Login
                 _buildBackButton(),
-                
+
                 const SizedBox(height: 48),
               ],
             ),
@@ -116,19 +116,19 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         children: [
           // Logo
           const LeafLogo(size: 70),
-          
+
           const SizedBox(height: 20),
-          
+
           // Title
           Text(
             'Admin Access',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+                  fontWeight: FontWeight.bold,
+                ),
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Subtitle badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -139,24 +139,24 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
             child: Text(
               'Administrator Login',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
           ),
-          
+
           const SizedBox(height: 32),
-          
+
           // Email input
           _buildEmailInput(),
-          
+
           const SizedBox(height: 16),
-          
+
           // Password input
           _buildPasswordInput(),
-          
+
           const SizedBox(height: 28),
-          
+
           // Login button
           _buildLoginButton(),
         ],
@@ -230,8 +230,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         ),
         suffixIcon: IconButton(
           icon: Icon(
-            _obscurePassword 
-                ? Icons.visibility_off_outlined 
+            _obscurePassword
+                ? Icons.visibility_off_outlined
                 : Icons.visibility_outlined,
             color: AppColors.textHint,
           ),
@@ -271,7 +271,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
         final isLoading = authProvider.state == AuthState.loading;
-        
+
         return SizedBox(
           width: double.infinity,
           height: 56,
@@ -297,9 +297,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                 : Text(
                     'Login',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
                   ),
           ),
         );
@@ -319,9 +319,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         label: Text(
           'Back to Farmer Login',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
-          ),
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
         ),
       ),
     );
