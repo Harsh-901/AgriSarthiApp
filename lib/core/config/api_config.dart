@@ -1,7 +1,10 @@
 /// API Configuration for the AgriSarthi Backend
 class ApiConfig {
-  // Base URL for the deployed backend
-  static const String baseUrl = 'https://agrisarthi.onrender.com';
+  // Base URL for the backend
+  // FOR EMULATOR USE: 'http://10.0.2.2:8000'
+  // FOR PHYSICAL DEVICE USE: 'http://<YOUR_IP>:8000'
+  // FOR PRODUCTION: 'https://agrisarthi.onrender.com'
+  static const String baseUrl = 'http://192.168.0.103:8000';
 
   // API Endpoints
   static const String authLogin = '$baseUrl/api/auth/login/';

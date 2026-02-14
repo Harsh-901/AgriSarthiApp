@@ -7,6 +7,8 @@ import 'core/config/supabase_config.dart';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
 import 'features/auth/providers/auth_provider.dart';
+import 'features/voice/providers/voice_provider.dart';
+import 'core/services/api_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +24,9 @@ void main() async {
       logLevel: RealtimeLogLevel.info,
     ),
   );
+  
+  // Initialize ApiService (Django backend)
+  await ApiService().init();
 
   runApp(const YojanaWalaApp());
 }
@@ -34,6 +39,7 @@ class YojanaWalaApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => VoiceProvider()),
       ],
       child: MaterialApp.router(
         title: 'Yojana Wala',

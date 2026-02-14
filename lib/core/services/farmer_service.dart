@@ -66,16 +66,16 @@ class FarmerService {
     final user = _supabase.auth.currentUser;
     if (user == null || user.phone == null) return null;
 
-    String phone = user.phone!;
-    // Remove country code
-    if (phone.startsWith('+91')) {
-      phone = phone.substring(3);
-    } else if (phone.startsWith('+')) {
-      // Remove any other country code (last 10 digits)
-      if (phone.length > 10) {
-        phone = phone.substring(phone.length - 10);
-      }
+    String phone = user.phone!.replaceAll(RegExp(r'[\s\-\(\)\+]'), '');
+    
+    // Standardize Indian numbers: 10 digits
+    if (phone.startsWith('91') && phone.length == 12) {
+      phone = phone.substring(2);
+    } else if (phone.length > 10) {
+      // Fallback: take last 10 digits
+      phone = phone.substring(phone.length - 10);
     }
+    
     return phone;
   }
 

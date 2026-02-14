@@ -9,6 +9,9 @@ import '../../../core/services/application_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/widgets/leaf_logo.dart';
+import '../../voice/providers/voice_provider.dart';
+import '../../voice/widgets/voice_assistant_button.dart';
+import '../../voice/widgets/voice_assistant_overlay.dart';
 
 class FarmerHomeScreen extends StatefulWidget {
   const FarmerHomeScreen({super.key});
@@ -31,6 +34,58 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
     super.initState();
     _loadFarmerName();
     _schemesFuture = _schemeService.getSchemes();
+
+    // Wire up voice navigation after first frame (need context for Provider)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _setupVoiceNavigation();
+    });
+  }
+
+  /// Set up the voice provider's navigation callback
+  void _setupVoiceNavigation() {
+    if (!mounted) return;
+    final voiceProvider = Provider.of<VoiceProvider>(context, listen: false);
+    voiceProvider.onNavigate = _handleVoiceNavigation;
+  }
+
+  /// Handle voice-driven navigation — maps backend action to routes
+  void _handleVoiceNavigation(String action, Map<String, dynamic>? data) {
+    if (!mounted) return;
+    debugPrint('FarmerHomeScreen: 🧭 Voice navigation → $action');
+
+    switch (action) {
+      case 'show_schemes':
+        // Already on home (shows schemes) — just stay
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Here are your eligible schemes'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        break;
+      case 'show_applications':
+        context.push(AppRouter.applications);
+        break;
+      case 'show_profile':
+      case 'complete_profile':
+        context.push(AppRouter.farmerProfile);
+        break;
+      case 'show_documents':
+        context.push(AppRouter.documentUpload);
+        break;
+      case 'show_help':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Help section coming soon!'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        break;
+      default:
+        debugPrint('FarmerHomeScreen: Unknown voice action: $action');
+    }
   }
 
   Future<void> _loadFarmerName() async {
@@ -128,6 +183,19 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
 
     if (confirmed != true || !mounted) return;
 
+    // Check if Django is authenticated
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (!authProvider.isDjangoAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot connect to server. Please check your IP/Network.'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     // Show loading
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -202,45 +270,54 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            // App Bar
-            _buildAppBar(authProvider),
-
-            // Greeting
-            _buildGreeting(),
-
-            // Schemes List
-            Expanded(
-              child: FutureBuilder<List<SchemeModel>>(
-                future: _schemesFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return Center(
-                      child: Text('Error loading schemes: ${snapshot.error}'),
-                    );
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(
-                      child: Text('No schemes available at the moment.'),
-                    );
-                  }
-
-                  final schemes = snapshot.data!;
-                  return ListView.builder(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    itemCount: schemes.length,
-                    itemBuilder: (context, index) =>
-                        _buildSchemeCard(schemes[index]),
-                  );
-                },
-              ),
+            Column(
+              children: [
+                // App Bar
+                _buildAppBar(authProvider),
+    
+                // Greeting
+                _buildGreeting(),
+    
+                // Schemes List
+                Expanded(
+                  child: FutureBuilder<List<SchemeModel>>(
+                    future: _schemesFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      } else if (snapshot.hasError) {
+                        return Center(
+                          child: Text('Error loading schemes: ${snapshot.error}'),
+                        );
+                      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return const Center(
+                          child: Text('No schemes available at the moment.'),
+                        );
+                      }
+    
+                      final schemes = snapshot.data!;
+                      return ListView.builder(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        itemCount: schemes.length,
+                        itemBuilder: (context, index) =>
+                            _buildSchemeCard(schemes[index]),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
+            
+            // Voice Assistant Overlay
+            const VoiceAssistantOverlay(),
           ],
         ),
       ),
+      floatingActionButton: const VoiceAssistantButton(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: _buildBottomNav(),
     );
   }
@@ -259,12 +336,21 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
             icon: const Icon(Icons.notifications_outlined),
             color: AppColors.textPrimary,
           ),
-          // Mic icon
-          IconButton(
-            onPressed: () => _showComingSoon('Voice Assistant'),
-            icon: const Icon(Icons.mic_none_outlined),
-            color: AppColors.textPrimary,
+          // Connection Status Indicator
+          GestureDetector(
+            onTap: () {
+              authProvider.syncWithDjango();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Checking connection...')),
+              );
+            },
+            child: Icon(
+              authProvider.isDjangoAuthenticated ? Icons.cloud_done : Icons.cloud_off,
+              size: 16,
+              color: authProvider.isDjangoAuthenticated ? AppColors.success : AppColors.error,
+            ),
           ),
+          const SizedBox(width: 8),
           // Logout
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: AppColors.textPrimary),
@@ -463,34 +549,21 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
   }
 
   Widget _buildBottomNav() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
+    return BottomAppBar(
+      shape: const CircularNotchedRectangle(),
+      notchMargin: 8.0,
+      color: AppColors.surface,
+      elevation: 10,
+      padding: EdgeInsets.zero,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
+          _buildNavItem(1, Icons.description_outlined, Icons.description, 'Apps'),
+          const SizedBox(width: 48), // Space for FAB
+          _buildNavItem(2, Icons.upload_file_outlined, Icons.upload_file, 'Docs'),
+          _buildNavItem(4, Icons.person_outline, Icons.person, 'Profile'),
         ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
-              _buildNavItem(1, Icons.description_outlined, Icons.description,
-                  'Applications'),
-              _buildNavItem(2, Icons.upload_file_outlined, Icons.upload_file,
-                  'Upload Docs'),
-              _buildNavItem(3, Icons.play_circle_outline,
-                  Icons.play_circle_filled, 'Videos'),
-              _buildNavItem(4, Icons.person_outline, Icons.person, 'Profile'),
-            ],
-          ),
-        ),
       ),
     );
   }
