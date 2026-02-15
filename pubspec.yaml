@@ -1,0 +1,38 @@
+name: yojana_wala
+description: "Something for the one who gives us food - A farmer welfare app"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  supabase_flutter: ^2.8.0
+  google_fonts: ^6.2.1
+  flutter_svg: ^2.0.9
+  pinput: ^5.0.1
+  shared_preferences: ^2.3.4
+  provider: ^6.1.2
+  go_router: ^14.6.2
+  http: ^1.2.0
+  http_parser: ^4.0.2
+  image_picker: ^1.0.7
+  file_picker: ^8.0.0+1
+  record: ^6.0.0
+  audioplayers: ^5.2.1
+  path_provider: ^2.1.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
