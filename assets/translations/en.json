@@ -1,0 +1,32 @@
+{
+    "app_title": "AgriSarthi",
+    "home": {
+        "greeting": "Hello",
+        "schemes_title": "Eligible Schemes",
+        "apply_button": "Apply",
+        "status_open": "Open",
+        "status_closed": "Closed",
+        "status_eligible": "Eligible",
+        "status_closing_soon": "Closing Soon",
+        "status_label": "Status:",
+        "benefits": "Benefits",
+        "deadline": "Deadline"
+    },
+    "menu": {
+        "home": "Home",
+        "apps": "Apps",
+        "docs": "Docs",
+        "profile": "Profile",
+        "logout": "Logout",
+        "change_language": "Change Language"
+    },
+    "messages": {
+        "coming_soon": "Coming Soon",
+        "logout_confirm": "Are you sure you want to logout?",
+        "cancel": "Cancel"
+    },
+    "features": {
+        "videos": "Videos",
+        "notifications": "Notifications"
+    }
+}

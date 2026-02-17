@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -129,7 +130,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
         context.push(AppRouter.documentUpload);
         break;
       case 3: // Videos
-        _showComingSoon('Videos');
+        _showComingSoon('features.videos'.tr());
         break;
       case 4: // Profile
         context.push(AppRouter.farmerProfile);
@@ -188,7 +189,8 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
     if (!authProvider.isDjangoAuthenticated) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Cannot connect to server. Please check your IP/Network.'),
+          content:
+              Text('Cannot connect to server. Please check your IP/Network.'),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
@@ -256,7 +258,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
   void _showComingSoon(String feature) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$feature - Coming Soon!'),
+        content: Text('$feature - ${'messages.coming_soon'.tr()}'),
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.primary,
       ),
@@ -276,10 +278,10 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
               children: [
                 // App Bar
                 _buildAppBar(authProvider),
-    
+
                 // Greeting
                 _buildGreeting(),
-    
+
                 // Schemes List
                 Expanded(
                   child: FutureBuilder<List<SchemeModel>>(
@@ -289,18 +291,19 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                         return const Center(child: CircularProgressIndicator());
                       } else if (snapshot.hasError) {
                         return Center(
-                          child: Text('Error loading schemes: ${snapshot.error}'),
+                          child:
+                              Text('Error loading schemes: ${snapshot.error}'),
                         );
                       } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                         return const Center(
                           child: Text('No schemes available at the moment.'),
                         );
                       }
-    
+
                       final schemes = snapshot.data!;
                       return ListView.builder(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         itemCount: schemes.length,
                         itemBuilder: (context, index) =>
                             _buildSchemeCard(schemes[index]),
@@ -310,7 +313,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                 ),
               ],
             ),
-            
+
             // Voice Assistant Overlay
             const VoiceAssistantOverlay(),
           ],
@@ -332,7 +335,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
           const Spacer(),
           // Notification icon
           IconButton(
-            onPressed: () => _showComingSoon('Notifications'),
+            onPressed: () => _showComingSoon('features.notifications'.tr()),
             icon: const Icon(Icons.notifications_outlined),
             color: AppColors.textPrimary,
           ),
@@ -345,9 +348,13 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
               );
             },
             child: Icon(
-              authProvider.isDjangoAuthenticated ? Icons.cloud_done : Icons.cloud_off,
+              authProvider.isDjangoAuthenticated
+                  ? Icons.cloud_done
+                  : Icons.cloud_off,
               size: 16,
-              color: authProvider.isDjangoAuthenticated ? AppColors.success : AppColors.error,
+              color: authProvider.isDjangoAuthenticated
+                  ? AppColors.success
+                  : AppColors.error,
             ),
           ),
           const SizedBox(width: 8),
@@ -356,20 +363,56 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
             icon: const Icon(Icons.more_vert, color: AppColors.textPrimary),
             onSelected: (value) async {
               if (value == 'logout') {
-                await authProvider.signOut();
-                if (mounted) {
-                  context.go(AppRouter.welcome);
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text('menu.logout'.tr()),
+                    content: Text('messages.logout_confirm'.tr()),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: Text('messages.cancel'.tr()),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: Text('menu.logout'.tr()),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirm == true) {
+                  await authProvider.signOut();
+                  if (mounted) {
+                    context.go(AppRouter.welcome);
+                  }
+                }
+              } else if (value == 'language') {
+                if (context.locale.languageCode == 'en') {
+                  context.setLocale(const Locale('hi'));
+                } else {
+                  context.setLocale(const Locale('en'));
                 }
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
+                value: 'language',
+                child: Row(
+                  children: [
+                    const Icon(Icons.language, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Text('menu.change_language'.tr()),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
                 value: 'logout',
                 child: Row(
                   children: [
-                    Icon(Icons.logout, color: AppColors.error),
-                    SizedBox(width: 8),
-                    Text('Logout'),
+                    const Icon(Icons.logout, color: AppColors.error),
+                    const SizedBox(width: 8),
+                    Text('menu.logout'.tr()),
                   ],
                 ),
               ),
@@ -392,7 +435,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                 child: LinearProgressIndicator(),
               )
             : Text(
-                'Hello, $_farmerName!',
+                '${'home.greeting'.tr()}, $_farmerName!',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
@@ -432,18 +475,18 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
           const SizedBox(height: 12),
 
           // Benefit Row
-          _buildInfoRow('Benefit:', scheme.benefit),
+          _buildInfoRow('home.benefits'.tr(), scheme.benefit),
           const SizedBox(height: 8),
 
           // Deadline Row
-          _buildInfoRow('Deadline:', scheme.deadline),
+          _buildInfoRow('home.deadline'.tr(), scheme.deadline),
           const SizedBox(height: 8),
 
           // Status Row with Apply Button
           Row(
             children: [
               Text(
-                'Status:',
+                'home.status_label'.tr(),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -464,9 +507,9 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),
-                child: const Text(
-                  'Apply',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                child: Text(
+                  'home.apply_button'.tr(),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
             ],
@@ -512,22 +555,22 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
       case SchemeStatus.open:
         bgColor = AppColors.primary;
         textColor = Colors.white;
-        label = 'Open';
+        label = 'home.status_open'.tr();
         break;
       case SchemeStatus.eligible:
         bgColor = AppColors.textSecondary.withOpacity(0.15);
         textColor = AppColors.textSecondary;
-        label = 'Eligible';
+        label = 'home.status_eligible'.tr();
         break;
       case SchemeStatus.closingSoon:
         bgColor = AppColors.warning;
         textColor = Colors.white;
-        label = 'Closing Soon';
+        label = 'home.status_closing_soon'.tr();
         break;
       case SchemeStatus.closed:
         bgColor = AppColors.error.withOpacity(0.15);
         textColor = AppColors.error;
-        label = 'Closed';
+        label = 'home.status_closed'.tr();
         break;
     }
 
@@ -558,11 +601,14 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
-          _buildNavItem(1, Icons.description_outlined, Icons.description, 'Apps'),
+          _buildNavItem(0, Icons.home_outlined, Icons.home, 'menu.home'.tr()),
+          _buildNavItem(1, Icons.description_outlined, Icons.description,
+              'menu.apps'.tr()),
           const SizedBox(width: 48), // Space for FAB
-          _buildNavItem(2, Icons.upload_file_outlined, Icons.upload_file, 'Docs'),
-          _buildNavItem(4, Icons.person_outline, Icons.person, 'Profile'),
+          _buildNavItem(2, Icons.upload_file_outlined, Icons.upload_file,
+              'menu.docs'.tr()),
+          _buildNavItem(
+              4, Icons.person_outline, Icons.person, 'menu.profile'.tr()),
         ],
       ),
     );

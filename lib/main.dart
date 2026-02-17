@@ -10,8 +10,11 @@ import 'features/auth/providers/auth_provider.dart';
 import 'features/voice/providers/voice_provider.dart';
 import 'core/services/api_service.dart';
 
+import 'package:easy_localization/easy_localization.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await EasyLocalization.ensureInitialized();
 
   // Initialize Supabase with session persistence
   await Supabase.initialize(
@@ -24,11 +27,18 @@ void main() async {
       logLevel: RealtimeLogLevel.info,
     ),
   );
-  
+
   // Initialize ApiService (Django backend)
   await ApiService().init();
 
-  runApp(const YojanaWalaApp());
+  runApp(
+    EasyLocalization(
+      supportedLocales: const [Locale('en'), Locale('hi')],
+      path: 'assets/translations',
+      fallbackLocale: const Locale('en'),
+      child: const YojanaWalaApp(),
+    ),
+  );
 }
 
 class YojanaWalaApp extends StatelessWidget {
@@ -45,6 +55,9 @@ class YojanaWalaApp extends StatelessWidget {
         title: 'Yojana Wala',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
+        localizationsDelegates: context.localizationDelegates,
+        supportedLocales: context.supportedLocales,
+        locale: context.locale,
         routerConfig: AppRouter.router,
       ),
     );

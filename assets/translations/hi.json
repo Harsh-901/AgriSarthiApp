@@ -1,0 +1,32 @@
+{
+    "app_title": "कृषि सारथी",
+    "home": {
+        "greeting": "नमस्ते",
+        "schemes_title": "पात्र योजनाएं",
+        "apply_button": "आवेदन करें",
+        "status_open": "खुल गया",
+        "status_closed": "बंद",
+        "status_eligible": "पात्र",
+        "status_closing_soon": "जल्द बंद हो रहा है",
+        "status_label": "स्थिति:",
+        "benefits": "लाभ",
+        "deadline": "समय सीमा"
+    },
+    "menu": {
+        "home": "होम",
+        "apps": "ऐप्स",
+        "docs": "दस्तावेज़",
+        "profile": "प्रोफाइल",
+        "logout": "लॉग आउट",
+        "change_language": "भाषा बदलें"
+    },
+    "messages": {
+        "coming_soon": "जल्द आ रहा है",
+        "logout_confirm": "क्या आप लॉग आउट करना चाहते हैं?",
+        "cancel": "रद्द करें"
+    },
+    "features": {
+        "videos": "वीडियो",
+        "notifications": "सूचनाएं"
+    }
+}
