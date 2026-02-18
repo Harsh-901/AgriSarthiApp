@@ -33,7 +33,12 @@ void main() async {
 
   runApp(
     EasyLocalization(
-      supportedLocales: const [Locale('en'), Locale('hi')],
+      // Add all major Indian languages support
+      supportedLocales: const [
+        Locale('en'),
+        Locale('hi'),
+        Locale('mr'),
+      ],
       path: 'assets/translations',
       fallbackLocale: const Locale('en'),
       child: const YojanaWalaApp(),

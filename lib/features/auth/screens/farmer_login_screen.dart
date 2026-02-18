@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -195,7 +196,7 @@ class _FarmerLoginScreenState extends State<FarmerLoginScreen> {
         const LeafLogo(size: 80),
         const SizedBox(height: 16),
         Text(
-          'Something for the one who gives us food',
+          'auth.tagline'.tr(),
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -210,7 +211,7 @@ class _FarmerLoginScreenState extends State<FarmerLoginScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Phone Number',
+          'auth.phone_label'.tr(),
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -226,7 +227,7 @@ class _FarmerLoginScreenState extends State<FarmerLoginScreen> {
           ],
           enabled: !_otpSent,
           decoration: InputDecoration(
-            hintText: 'Enter your 10-digit phone number',
+            hintText: 'auth.phone_hint'.tr(),
             filled: true,
             fillColor: AppColors.surface,
             border: OutlineInputBorder(
@@ -284,7 +285,7 @@ class _FarmerLoginScreenState extends State<FarmerLoginScreen> {
                     ),
                   )
                 : Text(
-                    'Get OTP',
+                    'auth.get_otp'.tr(),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
@@ -301,7 +302,7 @@ class _FarmerLoginScreenState extends State<FarmerLoginScreen> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
-          'Enter the 6-digit code sent to your phone',
+          'auth.otp_sent_hint'.tr(),
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -321,8 +322,8 @@ class _FarmerLoginScreenState extends State<FarmerLoginScreen> {
             onPressed: _canResendOtp ? _resendOtp : null,
             child: Text(
               _canResendOtp
-                  ? 'Resend OTP'
-                  : 'Resend OTP in $_resendCountdown s',
+                  ? 'auth.resend_otp'.tr()
+                  : '${"auth.resend_otp".tr()} in $_resendCountdown s',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color:
                         _canResendOtp ? AppColors.primary : AppColors.textHint,
@@ -406,7 +407,7 @@ class _FarmerLoginScreenState extends State<FarmerLoginScreen> {
                     ),
                   )
                 : Text(
-                    'Verify OTP',
+                    'auth.verify_otp'.tr(),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
@@ -433,7 +434,7 @@ class _FarmerLoginScreenState extends State<FarmerLoginScreen> {
           ),
         ),
         child: Text(
-          'Login as Farmer',
+          'auth.login_farmer'.tr(),
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
@@ -457,7 +458,7 @@ class _FarmerLoginScreenState extends State<FarmerLoginScreen> {
           ),
         ),
         child: Text(
-          'Login as Admin',
+          'auth.login_admin'.tr(),
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),

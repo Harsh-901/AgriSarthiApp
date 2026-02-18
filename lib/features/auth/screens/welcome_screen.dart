@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
@@ -18,15 +19,15 @@ class WelcomeScreen extends StatelessWidget {
           child: Column(
             children: [
               const Spacer(flex: 2),
-              
+
               // Logo and tagline section
               _buildLogoSection(context),
-              
+
               const Spacer(flex: 1),
-              
+
               // Get Started Button
               _buildGetStartedButton(context),
-              
+
               const SizedBox(height: 48),
             ],
           ),
@@ -41,16 +42,16 @@ class WelcomeScreen extends StatelessWidget {
       children: [
         // Leaf Logo
         const LeafLogo(size: 80),
-        
+
         const SizedBox(height: 24),
-        
+
         // Tagline
         Text(
-          'Something for the one who gives us food',
+          'auth.tagline'.tr(),
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w400,
-          ),
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w400,
+              ),
           textAlign: TextAlign.center,
         ),
       ],
@@ -74,11 +75,11 @@ class WelcomeScreen extends StatelessWidget {
           ),
         ),
         child: Text(
-          'Get Started',
+          'common.get_started'.tr(),
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
         ),
       ),
     );

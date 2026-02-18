@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/router/app_router.dart';
@@ -121,7 +122,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
           // Title
           Text(
-            'Admin Access',
+            'auth.admin_access'.tr(),
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -137,7 +138,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              'Administrator Login',
+              'auth.admin_login_badge'.tr(),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -178,7 +179,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         return null;
       },
       decoration: InputDecoration(
-        hintText: 'Email or Phone Number',
+        hintText: 'auth.email_phone_hint'.tr(),
         prefixIcon: const Icon(
           Icons.mail_outline_rounded,
           color: AppColors.textHint,
@@ -223,7 +224,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         return null;
       },
       decoration: InputDecoration(
-        hintText: 'Password',
+        hintText: 'auth.password_hint'.tr(),
         prefixIcon: const Icon(
           Icons.lock_outline_rounded,
           color: AppColors.textHint,
@@ -295,7 +296,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                     ),
                   )
                 : Text(
-                    'Login',
+                    'auth.login_title'.tr(),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
@@ -317,7 +318,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
           color: AppColors.textSecondary,
         ),
         label: Text(
-          'Back to Farmer Login',
+          'auth.back_to_farmer'.tr(),
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w500,

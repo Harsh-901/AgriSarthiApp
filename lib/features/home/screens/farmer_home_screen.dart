@@ -30,16 +30,30 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
   bool _isLoadingName = true;
   late Future<List<SchemeModel>> _schemesFuture;
 
+  Locale? _currentLocale;
+
   @override
   void initState() {
     super.initState();
     _loadFarmerName();
-    _schemesFuture = _schemeService.getSchemes();
+    // Schemes loading moved to didChangeDependencies to support translation
 
     // Wire up voice navigation after first frame (need context for Provider)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _setupVoiceNavigation();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Check if locale changed or needs initialization
+    final newLocale = context.locale;
+    if (_currentLocale != newLocale) {
+      _currentLocale = newLocale;
+      _schemesFuture =
+          _schemeService.getSchemes(languageCode: newLocale.languageCode);
+    }
   }
 
   /// Set up the voice provider's navigation callback
@@ -388,11 +402,24 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                   }
                 }
               } else if (value == 'language') {
-                if (context.locale.languageCode == 'en') {
-                  context.setLocale(const Locale('hi'));
-                } else {
-                  context.setLocale(const Locale('en'));
-                }
+                // Show language selection dialog
+                await showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text('menu.change_language'.tr()),
+                    content: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildLanguageOption(context, 'English', 'en'),
+                          _buildLanguageOption(context, 'हिंदी (Hindi)', 'hi'),
+                          _buildLanguageOption(
+                              context, 'मराठी (Marathi)', 'mr'),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
               }
             },
             itemBuilder: (context) => [
@@ -640,6 +667,59 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageOption(
+      BuildContext dialogContext, String name, String code) {
+    // Only highlight if exact match of language code
+    final isSelected = dialogContext.locale.languageCode == code;
+    return InkWell(
+      onTap: () async {
+        if (isSelected) {
+          Navigator.pop(dialogContext);
+          return;
+        }
+
+        // Show loading indicator
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Changing language to $name...'),
+            duration: const Duration(milliseconds: 1000),
+          ),
+        );
+
+        Navigator.pop(dialogContext);
+
+        // Wait a bit for dialog to close
+        await Future.delayed(const Duration(milliseconds: 200));
+
+        if (mounted) {
+          await context.setLocale(Locale(code));
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary.withOpacity(0.1) : null,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Text(
+              name,
+              style: TextStyle(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                fontSize: 16,
+              ),
+            ),
+            const Spacer(),
+            if (isSelected)
+              const Icon(Icons.check, color: AppColors.primary, size: 20),
           ],
         ),
       ),
