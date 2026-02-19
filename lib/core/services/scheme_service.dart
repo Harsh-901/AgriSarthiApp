@@ -1,10 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/supabase_config.dart';
-<<<<<<< HEAD
-=======
 import 'translation_service.dart';
->>>>>>> new
 
 enum SchemeStatus { open, eligible, closingSoon, closed }
 
@@ -48,8 +45,6 @@ class SchemeModel {
       description: json['description'],
     );
   }
-<<<<<<< HEAD
-=======
 
   SchemeModel copyWith({
     String? id,
@@ -68,18 +63,13 @@ class SchemeModel {
       description: description ?? this.description,
     );
   }
->>>>>>> new
 }
 
 class SchemeService {
   final SupabaseClient _supabase = SupabaseConfig.client;
 
   /// Fetch all schemes from the 'schemes' table
-<<<<<<< HEAD
-  Future<List<SchemeModel>> getSchemes() async {
-=======
   Future<List<SchemeModel>> getSchemes({String? languageCode}) async {
->>>>>>> new
     try {
       final response = await _supabase
           .from('schemes')
@@ -87,9 +77,6 @@ class SchemeService {
           .order('created_at', ascending: false);
 
       final data = response as List<dynamic>;
-<<<<<<< HEAD
-      return data.map((json) => SchemeModel.fromJson(json)).toList();
-=======
       final schemes = data.map((json) => SchemeModel.fromJson(json)).toList();
 
       // If language is provided and not English, translate dynamic content
@@ -128,7 +115,6 @@ class SchemeService {
       }
 
       return schemes;
->>>>>>> new
     } catch (e) {
       debugPrint('SchemeService: Error fetching schemes - $e');
       return [];

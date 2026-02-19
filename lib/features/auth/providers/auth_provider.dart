@@ -1,10 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
-=======
 import '../../../core/config/api_config.dart';
 import '../../../core/services/api_service.dart';
->>>>>>> new
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -40,10 +37,7 @@ class AuthProvider extends ChangeNotifier {
   bool _isAdminLoggedIn = false;
   String? _adminName;
   String? _adminId;
-<<<<<<< HEAD
-=======
   bool _isDjangoAuthenticated = false;
->>>>>>> new
 
   // Getters
   AuthState get state => _state;
@@ -60,10 +54,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isProfileComplete => _isProfileComplete;
   User? get supabaseUser => _supabaseUser;
   bool get isInitialized => _isInitialized;
-<<<<<<< HEAD
-=======
   bool get isDjangoAuthenticated => _isDjangoAuthenticated;
->>>>>>> new
 
   final SupabaseClient _supabase = SupabaseConfig.client;
   final FarmerService _farmerService = FarmerService();
@@ -106,10 +97,7 @@ class AuthProvider extends ChangeNotifier {
         await _checkFarmerProfile();
 
         _state = AuthState.authenticated;
-<<<<<<< HEAD
-=======
         syncWithDjango();
->>>>>>> new
       } else {
         debugPrint('AuthProvider: No existing session');
         _state = AuthState.unauthenticated;
@@ -145,13 +133,10 @@ class AuthProvider extends ChangeNotifier {
 
         _state = AuthState.authenticated;
         await _saveLocalData();
-<<<<<<< HEAD
-=======
         
         // Sync with Django backend
         syncWithDjango();
         
->>>>>>> new
         notifyListeners();
       } else if (data.event == AuthChangeEvent.signedOut) {
         debugPrint('AuthProvider: User signed out');
@@ -492,8 +477,6 @@ class AuthProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
   }
-<<<<<<< HEAD
-=======
 
   bool _isSyncing = false;
   bool get isSyncing => _isSyncing;
@@ -555,5 +538,4 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
->>>>>>> new
 }

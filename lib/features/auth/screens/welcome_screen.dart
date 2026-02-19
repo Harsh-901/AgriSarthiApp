@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-<<<<<<< HEAD
-=======
 import 'package:easy_localization/easy_localization.dart';
->>>>>>> new
 
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_theme.dart';
@@ -22,17 +19,6 @@ class WelcomeScreen extends StatelessWidget {
           child: Column(
             children: [
               const Spacer(flex: 2),
-<<<<<<< HEAD
-              
-              // Logo and tagline section
-              _buildLogoSection(context),
-              
-              const Spacer(flex: 1),
-              
-              // Get Started Button
-              _buildGetStartedButton(context),
-              
-=======
 
               // Logo and tagline section
               _buildLogoSection(context),
@@ -42,7 +28,6 @@ class WelcomeScreen extends StatelessWidget {
               // Get Started Button
               _buildGetStartedButton(context),
 
->>>>>>> new
               const SizedBox(height: 48),
             ],
           ),
@@ -57,18 +42,6 @@ class WelcomeScreen extends StatelessWidget {
       children: [
         // Leaf Logo
         const LeafLogo(size: 80),
-<<<<<<< HEAD
-        
-        const SizedBox(height: 24),
-        
-        // Tagline
-        Text(
-          'Something for the one who gives us food',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w400,
-          ),
-=======
 
         const SizedBox(height: 24),
 
@@ -79,7 +52,6 @@ class WelcomeScreen extends StatelessWidget {
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w400,
               ),
->>>>>>> new
           textAlign: TextAlign.center,
         ),
       ],
@@ -103,19 +75,11 @@ class WelcomeScreen extends StatelessWidget {
           ),
         ),
         child: Text(
-<<<<<<< HEAD
-          'Get Started',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
-=======
           'common.get_started'.tr(),
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
               ),
->>>>>>> new
         ),
       ),
     );

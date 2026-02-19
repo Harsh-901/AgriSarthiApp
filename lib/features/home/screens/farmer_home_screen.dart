@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
-=======
 import 'package:easy_localization/easy_localization.dart';
->>>>>>> new
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -13,12 +10,9 @@ import '../../../core/services/application_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/widgets/leaf_logo.dart';
-<<<<<<< HEAD
-=======
 import '../../voice/providers/voice_provider.dart';
 import '../../voice/widgets/voice_assistant_button.dart';
 import '../../voice/widgets/voice_assistant_overlay.dart';
->>>>>>> new
 
 class FarmerHomeScreen extends StatefulWidget {
   const FarmerHomeScreen({super.key});
@@ -36,18 +30,12 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
   bool _isLoadingName = true;
   late Future<List<SchemeModel>> _schemesFuture;
 
-<<<<<<< HEAD
-=======
   Locale? _currentLocale;
 
->>>>>>> new
   @override
   void initState() {
     super.initState();
     _loadFarmerName();
-<<<<<<< HEAD
-    _schemesFuture = _schemeService.getSchemes();
-=======
     // Schemes loading moved to didChangeDependencies to support translation
 
     // Wire up voice navigation after first frame (need context for Provider)
@@ -113,7 +101,6 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
       default:
         debugPrint('FarmerHomeScreen: Unknown voice action: $action');
     }
->>>>>>> new
   }
 
   Future<void> _loadFarmerName() async {
@@ -157,11 +144,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
         context.push(AppRouter.documentUpload);
         break;
       case 3: // Videos
-<<<<<<< HEAD
-        _showComingSoon('Videos');
-=======
         _showComingSoon('features.videos'.tr());
->>>>>>> new
         break;
       case 4: // Profile
         context.push(AppRouter.farmerProfile);
@@ -215,8 +198,6 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
 
     if (confirmed != true || !mounted) return;
 
-<<<<<<< HEAD
-=======
     // Check if Django is authenticated
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (!authProvider.isDjangoAuthenticated) {
@@ -231,7 +212,6 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
       return;
     }
 
->>>>>>> new
     // Show loading
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -292,11 +272,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
   void _showComingSoon(String feature) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-<<<<<<< HEAD
-        content: Text('$feature - Coming Soon!'),
-=======
         content: Text('$feature - ${'messages.coming_soon'.tr()}'),
->>>>>>> new
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.primary,
       ),
@@ -310,47 +286,6 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-<<<<<<< HEAD
-        child: Column(
-          children: [
-            // App Bar
-            _buildAppBar(authProvider),
-
-            // Greeting
-            _buildGreeting(),
-
-            // Schemes List
-            Expanded(
-              child: FutureBuilder<List<SchemeModel>>(
-                future: _schemesFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return Center(
-                      child: Text('Error loading schemes: ${snapshot.error}'),
-                    );
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(
-                      child: Text('No schemes available at the moment.'),
-                    );
-                  }
-
-                  final schemes = snapshot.data!;
-                  return ListView.builder(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    itemCount: schemes.length,
-                    itemBuilder: (context, index) =>
-                        _buildSchemeCard(schemes[index]),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-=======
         child: Stack(
           children: [
             Column(
@@ -400,7 +335,6 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
       ),
       floatingActionButton: const VoiceAssistantButton(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
->>>>>>> new
       bottomNavigationBar: _buildBottomNav(),
     );
   }
@@ -415,18 +349,6 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
           const Spacer(),
           // Notification icon
           IconButton(
-<<<<<<< HEAD
-            onPressed: () => _showComingSoon('Notifications'),
-            icon: const Icon(Icons.notifications_outlined),
-            color: AppColors.textPrimary,
-          ),
-          // Mic icon
-          IconButton(
-            onPressed: () => _showComingSoon('Voice Assistant'),
-            icon: const Icon(Icons.mic_none_outlined),
-            color: AppColors.textPrimary,
-          ),
-=======
             onPressed: () => _showComingSoon('features.notifications'.tr()),
             icon: const Icon(Icons.notifications_outlined),
             color: AppColors.textPrimary,
@@ -450,28 +372,11 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
             ),
           ),
           const SizedBox(width: 8),
->>>>>>> new
           // Logout
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: AppColors.textPrimary),
             onSelected: (value) async {
               if (value == 'logout') {
-<<<<<<< HEAD
-                await authProvider.signOut();
-                if (mounted) {
-                  context.go(AppRouter.welcome);
-                }
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout, color: AppColors.error),
-                    SizedBox(width: 8),
-                    Text('Logout'),
-=======
                 final confirm = await showDialog<bool>(
                   context: context,
                   builder: (context) => AlertDialog(
@@ -535,7 +440,6 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                     const Icon(Icons.logout, color: AppColors.error),
                     const SizedBox(width: 8),
                     Text('menu.logout'.tr()),
->>>>>>> new
                   ],
                 ),
               ),
@@ -558,11 +462,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                 child: LinearProgressIndicator(),
               )
             : Text(
-<<<<<<< HEAD
-                'Hello, $_farmerName!',
-=======
                 '${'home.greeting'.tr()}, $_farmerName!',
->>>>>>> new
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
@@ -602,30 +502,18 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
           const SizedBox(height: 12),
 
           // Benefit Row
-<<<<<<< HEAD
-          _buildInfoRow('Benefit:', scheme.benefit),
-          const SizedBox(height: 8),
-
-          // Deadline Row
-          _buildInfoRow('Deadline:', scheme.deadline),
-=======
           _buildInfoRow('home.benefits'.tr(), scheme.benefit),
           const SizedBox(height: 8),
 
           // Deadline Row
           _buildInfoRow('home.deadline'.tr(), scheme.deadline),
->>>>>>> new
           const SizedBox(height: 8),
 
           // Status Row with Apply Button
           Row(
             children: [
               Text(
-<<<<<<< HEAD
-                'Status:',
-=======
                 'home.status_label'.tr(),
->>>>>>> new
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -646,15 +534,9 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),
-<<<<<<< HEAD
-                child: const Text(
-                  'Apply',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-=======
                 child: Text(
                   'home.apply_button'.tr(),
                   style: const TextStyle(fontWeight: FontWeight.w600),
->>>>>>> new
                 ),
               ),
             ],
@@ -700,38 +582,22 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
       case SchemeStatus.open:
         bgColor = AppColors.primary;
         textColor = Colors.white;
-<<<<<<< HEAD
-        label = 'Open';
-=======
         label = 'home.status_open'.tr();
->>>>>>> new
         break;
       case SchemeStatus.eligible:
         bgColor = AppColors.textSecondary.withOpacity(0.15);
         textColor = AppColors.textSecondary;
-<<<<<<< HEAD
-        label = 'Eligible';
-=======
         label = 'home.status_eligible'.tr();
->>>>>>> new
         break;
       case SchemeStatus.closingSoon:
         bgColor = AppColors.warning;
         textColor = Colors.white;
-<<<<<<< HEAD
-        label = 'Closing Soon';
-=======
         label = 'home.status_closing_soon'.tr();
->>>>>>> new
         break;
       case SchemeStatus.closed:
         bgColor = AppColors.error.withOpacity(0.15);
         textColor = AppColors.error;
-<<<<<<< HEAD
-        label = 'Closed';
-=======
         label = 'home.status_closed'.tr();
->>>>>>> new
         break;
     }
 
@@ -753,37 +619,6 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
   }
 
   Widget _buildBottomNav() {
-<<<<<<< HEAD
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
-              _buildNavItem(1, Icons.description_outlined, Icons.description,
-                  'Applications'),
-              _buildNavItem(2, Icons.upload_file_outlined, Icons.upload_file,
-                  'Upload Docs'),
-              _buildNavItem(3, Icons.play_circle_outline,
-                  Icons.play_circle_filled, 'Videos'),
-              _buildNavItem(4, Icons.person_outline, Icons.person, 'Profile'),
-            ],
-          ),
-        ),
-      ),
-=======
     return BottomAppBar(
       shape: const CircularNotchedRectangle(),
       notchMargin: 8.0,
@@ -803,7 +638,6 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
               4, Icons.person_outline, Icons.person, 'menu.profile'.tr()),
         ],
       ),
->>>>>>> new
     );
   }
 
@@ -838,8 +672,6 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
       ),
     );
   }
-<<<<<<< HEAD
-=======
 
   Widget _buildLanguageOption(
       BuildContext dialogContext, String name, String code) {
@@ -893,5 +725,4 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
       ),
     );
   }
->>>>>>> new
 }
