@@ -68,7 +68,7 @@ class VoiceAssistantService {
 
     try {
       final url = '${ApiConfig.baseUrl}/api/voice/process/';
-      debugPrint('VoiceAssistantService: POST $url');
+      debugPrint('VoiceAssistantService: 🌐 POST $url');
       final uri = Uri.parse(url);
       final request = http.MultipartRequest('POST', uri);
 

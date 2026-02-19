@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
@@ -149,16 +150,31 @@ class VoiceProvider with ChangeNotifier {
   Future<void> startRecording() async {
     // Guard: don't start if already recording or processing
     if (_state == VoiceState.recording || _state == VoiceState.processing) {
-      debugPrint('VoiceProvider: Ignoring startRecording — already ${_state.name}');
+      debugPrint(
+          'VoiceProvider: Ignoring startRecording — already ${_state.name}');
       return;
     }
 
     try {
-      // Check AND request permission
-      bool hasPermission = await _recorder.hasPermission();
-      if (!hasPermission) {
-        debugPrint('VoiceProvider: Mic permission denied — requesting...');
-        _setErrorState('Microphone permission denied. Please enable in app settings.');
+      // Check AND request permission using permission_handler which is more robust
+      var status = await Permission.microphone.status;
+      if (status.isDenied) {
+        debugPrint(
+            'VoiceProvider: Mic permission denied — requesting with permission_handler...');
+        status = await Permission.microphone.request();
+      }
+
+      if (status.isPermanentlyDenied) {
+        debugPrint('VoiceProvider: Mic permission permanently denied');
+        _setErrorState(
+            'Microphone permission denied. Please enable in Settings.');
+        await openAppSettings();
+        return;
+      }
+
+      if (!status.isGranted) {
+        debugPrint('VoiceProvider: Mic permission not granted');
+        _setErrorState('Microphone permission required.');
         return;
       }
 
@@ -170,7 +186,8 @@ class VoiceProvider with ChangeNotifier {
         numChannels: 1,
       );
 
-      final fileName = 'voice_input_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      final fileName =
+          'voice_input_${DateTime.now().millisecondsSinceEpoch}.m4a';
       final path = '${directory.path}/$fileName';
 
       await _recorder.start(config, path: path);
@@ -179,14 +196,16 @@ class VoiceProvider with ChangeNotifier {
       debugPrint('VoiceProvider: ✅ Recording started -> $path');
     } catch (e) {
       debugPrint('VoiceProvider: ❌ Start recording error: $e');
-      _setErrorState('Failed to start recording: ${e.toString().split('\n').first}');
+      _setErrorState(
+          'Failed to start recording: ${e.toString().split('\n').first}');
     }
   }
 
   /// Stop recording and process with backend
   Future<void> stopRecording() async {
     if (_state != VoiceState.recording) {
-      debugPrint('VoiceProvider: Ignoring stopRecording — not recording (state=${_state.name})');
+      debugPrint(
+          'VoiceProvider: Ignoring stopRecording — not recording (state=${_state.name})');
       return;
     }
 
@@ -212,7 +231,8 @@ class VoiceProvider with ChangeNotifier {
         return;
       }
 
-      debugPrint('VoiceProvider: Recording stopped. File: $path ($fileSize bytes)');
+      debugPrint(
+          'VoiceProvider: Recording stopped. File: $path ($fileSize bytes)');
 
       // Transition to processing
       _setState(VoiceState.processing);
@@ -234,7 +254,8 @@ class VoiceProvider with ChangeNotifier {
         _lastData = result.data;
         _errorMessage = null;
 
-        debugPrint('VoiceProvider: ✅ Backend response — intent: ${result.intent}, action: $_lastAction');
+        debugPrint(
+            'VoiceProvider: ✅ Backend response — intent: ${result.intent}, action: $_lastAction');
 
         // Play audio response if available
         if (result.audioBytes != null && result.audioBytes!.isNotEmpty) {
@@ -259,7 +280,8 @@ class VoiceProvider with ChangeNotifier {
   Future<void> _playAudioBytes(Uint8List audioBytes) async {
     try {
       _setState(VoiceState.speaking);
-      debugPrint('VoiceProvider: Playing ${audioBytes.length} bytes of audio...');
+      debugPrint(
+          'VoiceProvider: Playing ${audioBytes.length} bytes of audio...');
 
       final source = BytesSource(audioBytes);
       await _player.play(source);
