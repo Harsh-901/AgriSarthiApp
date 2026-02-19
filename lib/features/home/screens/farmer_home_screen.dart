@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
+=======
+import 'package:easy_localization/easy_localization.dart';
+>>>>>>> new
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -9,6 +13,12 @@ import '../../../core/services/application_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/widgets/leaf_logo.dart';
+<<<<<<< HEAD
+=======
+import '../../voice/providers/voice_provider.dart';
+import '../../voice/widgets/voice_assistant_button.dart';
+import '../../voice/widgets/voice_assistant_overlay.dart';
+>>>>>>> new
 
 class FarmerHomeScreen extends StatefulWidget {
   const FarmerHomeScreen({super.key});
@@ -26,11 +36,84 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
   bool _isLoadingName = true;
   late Future<List<SchemeModel>> _schemesFuture;
 
+<<<<<<< HEAD
+=======
+  Locale? _currentLocale;
+
+>>>>>>> new
   @override
   void initState() {
     super.initState();
     _loadFarmerName();
+<<<<<<< HEAD
     _schemesFuture = _schemeService.getSchemes();
+=======
+    // Schemes loading moved to didChangeDependencies to support translation
+
+    // Wire up voice navigation after first frame (need context for Provider)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _setupVoiceNavigation();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Check if locale changed or needs initialization
+    final newLocale = context.locale;
+    if (_currentLocale != newLocale) {
+      _currentLocale = newLocale;
+      _schemesFuture =
+          _schemeService.getSchemes(languageCode: newLocale.languageCode);
+    }
+  }
+
+  /// Set up the voice provider's navigation callback
+  void _setupVoiceNavigation() {
+    if (!mounted) return;
+    final voiceProvider = Provider.of<VoiceProvider>(context, listen: false);
+    voiceProvider.onNavigate = _handleVoiceNavigation;
+  }
+
+  /// Handle voice-driven navigation — maps backend action to routes
+  void _handleVoiceNavigation(String action, Map<String, dynamic>? data) {
+    if (!mounted) return;
+    debugPrint('FarmerHomeScreen: 🧭 Voice navigation → $action');
+
+    switch (action) {
+      case 'show_schemes':
+        // Already on home (shows schemes) — just stay
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Here are your eligible schemes'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        break;
+      case 'show_applications':
+        context.push(AppRouter.applications);
+        break;
+      case 'show_profile':
+      case 'complete_profile':
+        context.push(AppRouter.farmerProfile);
+        break;
+      case 'show_documents':
+        context.push(AppRouter.documentUpload);
+        break;
+      case 'show_help':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Help section coming soon!'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        break;
+      default:
+        debugPrint('FarmerHomeScreen: Unknown voice action: $action');
+    }
+>>>>>>> new
   }
 
   Future<void> _loadFarmerName() async {
@@ -74,7 +157,11 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
         context.push(AppRouter.documentUpload);
         break;
       case 3: // Videos
+<<<<<<< HEAD
         _showComingSoon('Videos');
+=======
+        _showComingSoon('features.videos'.tr());
+>>>>>>> new
         break;
       case 4: // Profile
         context.push(AppRouter.farmerProfile);
@@ -128,6 +215,23 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
 
     if (confirmed != true || !mounted) return;
 
+<<<<<<< HEAD
+=======
+    // Check if Django is authenticated
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (!authProvider.isDjangoAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+              Text('Cannot connect to server. Please check your IP/Network.'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+>>>>>>> new
     // Show loading
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -188,7 +292,11 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
   void _showComingSoon(String feature) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+<<<<<<< HEAD
         content: Text('$feature - Coming Soon!'),
+=======
+        content: Text('$feature - ${'messages.coming_soon'.tr()}'),
+>>>>>>> new
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.primary,
       ),
@@ -202,6 +310,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
+<<<<<<< HEAD
         child: Column(
           children: [
             // App Bar
@@ -241,6 +350,57 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
           ],
         ),
       ),
+=======
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                // App Bar
+                _buildAppBar(authProvider),
+
+                // Greeting
+                _buildGreeting(),
+
+                // Schemes List
+                Expanded(
+                  child: FutureBuilder<List<SchemeModel>>(
+                    future: _schemesFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      } else if (snapshot.hasError) {
+                        return Center(
+                          child:
+                              Text('Error loading schemes: ${snapshot.error}'),
+                        );
+                      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return const Center(
+                          child: Text('No schemes available at the moment.'),
+                        );
+                      }
+
+                      final schemes = snapshot.data!;
+                      return ListView.builder(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        itemCount: schemes.length,
+                        itemBuilder: (context, index) =>
+                            _buildSchemeCard(schemes[index]),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+
+            // Voice Assistant Overlay
+            const VoiceAssistantOverlay(),
+          ],
+        ),
+      ),
+      floatingActionButton: const VoiceAssistantButton(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+>>>>>>> new
       bottomNavigationBar: _buildBottomNav(),
     );
   }
@@ -255,6 +415,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
           const Spacer(),
           // Notification icon
           IconButton(
+<<<<<<< HEAD
             onPressed: () => _showComingSoon('Notifications'),
             icon: const Icon(Icons.notifications_outlined),
             color: AppColors.textPrimary,
@@ -265,11 +426,37 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
             icon: const Icon(Icons.mic_none_outlined),
             color: AppColors.textPrimary,
           ),
+=======
+            onPressed: () => _showComingSoon('features.notifications'.tr()),
+            icon: const Icon(Icons.notifications_outlined),
+            color: AppColors.textPrimary,
+          ),
+          // Connection Status Indicator
+          GestureDetector(
+            onTap: () {
+              authProvider.syncWithDjango();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Checking connection...')),
+              );
+            },
+            child: Icon(
+              authProvider.isDjangoAuthenticated
+                  ? Icons.cloud_done
+                  : Icons.cloud_off,
+              size: 16,
+              color: authProvider.isDjangoAuthenticated
+                  ? AppColors.success
+                  : AppColors.error,
+            ),
+          ),
+          const SizedBox(width: 8),
+>>>>>>> new
           // Logout
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: AppColors.textPrimary),
             onSelected: (value) async {
               if (value == 'logout') {
+<<<<<<< HEAD
                 await authProvider.signOut();
                 if (mounted) {
                   context.go(AppRouter.welcome);
@@ -284,6 +471,71 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                     Icon(Icons.logout, color: AppColors.error),
                     SizedBox(width: 8),
                     Text('Logout'),
+=======
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text('menu.logout'.tr()),
+                    content: Text('messages.logout_confirm'.tr()),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: Text('messages.cancel'.tr()),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: Text('menu.logout'.tr()),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirm == true) {
+                  await authProvider.signOut();
+                  if (mounted) {
+                    context.go(AppRouter.welcome);
+                  }
+                }
+              } else if (value == 'language') {
+                // Show language selection dialog
+                await showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text('menu.change_language'.tr()),
+                    content: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildLanguageOption(context, 'English', 'en'),
+                          _buildLanguageOption(context, 'हिंदी (Hindi)', 'hi'),
+                          _buildLanguageOption(
+                              context, 'मराठी (Marathi)', 'mr'),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'language',
+                child: Row(
+                  children: [
+                    const Icon(Icons.language, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Text('menu.change_language'.tr()),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    const Icon(Icons.logout, color: AppColors.error),
+                    const SizedBox(width: 8),
+                    Text('menu.logout'.tr()),
+>>>>>>> new
                   ],
                 ),
               ),
@@ -306,7 +558,11 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                 child: LinearProgressIndicator(),
               )
             : Text(
+<<<<<<< HEAD
                 'Hello, $_farmerName!',
+=======
+                '${'home.greeting'.tr()}, $_farmerName!',
+>>>>>>> new
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
@@ -346,18 +602,30 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
           const SizedBox(height: 12),
 
           // Benefit Row
+<<<<<<< HEAD
           _buildInfoRow('Benefit:', scheme.benefit),
           const SizedBox(height: 8),
 
           // Deadline Row
           _buildInfoRow('Deadline:', scheme.deadline),
+=======
+          _buildInfoRow('home.benefits'.tr(), scheme.benefit),
+          const SizedBox(height: 8),
+
+          // Deadline Row
+          _buildInfoRow('home.deadline'.tr(), scheme.deadline),
+>>>>>>> new
           const SizedBox(height: 8),
 
           // Status Row with Apply Button
           Row(
             children: [
               Text(
+<<<<<<< HEAD
                 'Status:',
+=======
+                'home.status_label'.tr(),
+>>>>>>> new
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -378,9 +646,15 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),
+<<<<<<< HEAD
                 child: const Text(
                   'Apply',
                   style: TextStyle(fontWeight: FontWeight.w600),
+=======
+                child: Text(
+                  'home.apply_button'.tr(),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+>>>>>>> new
                 ),
               ),
             ],
@@ -426,22 +700,38 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
       case SchemeStatus.open:
         bgColor = AppColors.primary;
         textColor = Colors.white;
+<<<<<<< HEAD
         label = 'Open';
+=======
+        label = 'home.status_open'.tr();
+>>>>>>> new
         break;
       case SchemeStatus.eligible:
         bgColor = AppColors.textSecondary.withOpacity(0.15);
         textColor = AppColors.textSecondary;
+<<<<<<< HEAD
         label = 'Eligible';
+=======
+        label = 'home.status_eligible'.tr();
+>>>>>>> new
         break;
       case SchemeStatus.closingSoon:
         bgColor = AppColors.warning;
         textColor = Colors.white;
+<<<<<<< HEAD
         label = 'Closing Soon';
+=======
+        label = 'home.status_closing_soon'.tr();
+>>>>>>> new
         break;
       case SchemeStatus.closed:
         bgColor = AppColors.error.withOpacity(0.15);
         textColor = AppColors.error;
+<<<<<<< HEAD
         label = 'Closed';
+=======
+        label = 'home.status_closed'.tr();
+>>>>>>> new
         break;
     }
 
@@ -463,6 +753,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
   }
 
   Widget _buildBottomNav() {
+<<<<<<< HEAD
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -492,6 +783,27 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
           ),
         ),
       ),
+=======
+    return BottomAppBar(
+      shape: const CircularNotchedRectangle(),
+      notchMargin: 8.0,
+      color: AppColors.surface,
+      elevation: 10,
+      padding: EdgeInsets.zero,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildNavItem(0, Icons.home_outlined, Icons.home, 'menu.home'.tr()),
+          _buildNavItem(1, Icons.description_outlined, Icons.description,
+              'menu.apps'.tr()),
+          const SizedBox(width: 48), // Space for FAB
+          _buildNavItem(2, Icons.upload_file_outlined, Icons.upload_file,
+              'menu.docs'.tr()),
+          _buildNavItem(
+              4, Icons.person_outline, Icons.person, 'menu.profile'.tr()),
+        ],
+      ),
+>>>>>>> new
     );
   }
 
@@ -526,4 +838,60 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
       ),
     );
   }
+<<<<<<< HEAD
+=======
+
+  Widget _buildLanguageOption(
+      BuildContext dialogContext, String name, String code) {
+    // Only highlight if exact match of language code
+    final isSelected = dialogContext.locale.languageCode == code;
+    return InkWell(
+      onTap: () async {
+        if (isSelected) {
+          Navigator.pop(dialogContext);
+          return;
+        }
+
+        // Show loading indicator
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Changing language to $name...'),
+            duration: const Duration(milliseconds: 1000),
+          ),
+        );
+
+        Navigator.pop(dialogContext);
+
+        // Wait a bit for dialog to close
+        await Future.delayed(const Duration(milliseconds: 200));
+
+        if (mounted) {
+          await context.setLocale(Locale(code));
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary.withOpacity(0.1) : null,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Text(
+              name,
+              style: TextStyle(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                fontSize: 16,
+              ),
+            ),
+            const Spacer(),
+            if (isSelected)
+              const Icon(Icons.check, color: AppColors.primary, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+>>>>>>> new
 }

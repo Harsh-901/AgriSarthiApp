@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+<<<<<<< HEAD
+=======
+import 'package:easy_localization/easy_localization.dart';
+>>>>>>> new
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -195,7 +199,11 @@ class _FarmerLoginScreenState extends State<FarmerLoginScreen> {
         const LeafLogo(size: 80),
         const SizedBox(height: 16),
         Text(
+<<<<<<< HEAD
           'Something for the one who gives us food',
+=======
+          'auth.tagline'.tr(),
+>>>>>>> new
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -210,7 +218,11 @@ class _FarmerLoginScreenState extends State<FarmerLoginScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
+<<<<<<< HEAD
           'Phone Number',
+=======
+          'auth.phone_label'.tr(),
+>>>>>>> new
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -226,7 +238,11 @@ class _FarmerLoginScreenState extends State<FarmerLoginScreen> {
           ],
           enabled: !_otpSent,
           decoration: InputDecoration(
+<<<<<<< HEAD
             hintText: 'Enter your 10-digit phone number',
+=======
+            hintText: 'auth.phone_hint'.tr(),
+>>>>>>> new
             filled: true,
             fillColor: AppColors.surface,
             border: OutlineInputBorder(
@@ -284,7 +300,11 @@ class _FarmerLoginScreenState extends State<FarmerLoginScreen> {
                     ),
                   )
                 : Text(
+<<<<<<< HEAD
                     'Get OTP',
+=======
+                    'auth.get_otp'.tr(),
+>>>>>>> new
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
@@ -301,7 +321,11 @@ class _FarmerLoginScreenState extends State<FarmerLoginScreen> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
+<<<<<<< HEAD
           'Enter the 6-digit code sent to your phone',
+=======
+          'auth.otp_sent_hint'.tr(),
+>>>>>>> new
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -321,8 +345,13 @@ class _FarmerLoginScreenState extends State<FarmerLoginScreen> {
             onPressed: _canResendOtp ? _resendOtp : null,
             child: Text(
               _canResendOtp
+<<<<<<< HEAD
                   ? 'Resend OTP'
                   : 'Resend OTP in $_resendCountdown s',
+=======
+                  ? 'auth.resend_otp'.tr()
+                  : '${"auth.resend_otp".tr()} in $_resendCountdown s',
+>>>>>>> new
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color:
                         _canResendOtp ? AppColors.primary : AppColors.textHint,
@@ -406,7 +435,11 @@ class _FarmerLoginScreenState extends State<FarmerLoginScreen> {
                     ),
                   )
                 : Text(
+<<<<<<< HEAD
                     'Verify OTP',
+=======
+                    'auth.verify_otp'.tr(),
+>>>>>>> new
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
@@ -433,7 +466,11 @@ class _FarmerLoginScreenState extends State<FarmerLoginScreen> {
           ),
         ),
         child: Text(
+<<<<<<< HEAD
           'Login as Farmer',
+=======
+          'auth.login_farmer'.tr(),
+>>>>>>> new
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
@@ -457,7 +494,11 @@ class _FarmerLoginScreenState extends State<FarmerLoginScreen> {
           ),
         ),
         child: Text(
+<<<<<<< HEAD
           'Login as Admin',
+=======
+          'auth.login_admin'.tr(),
+>>>>>>> new
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+<<<<<<< HEAD
+=======
+import 'package:easy_localization/easy_localization.dart';
+>>>>>>> new
 import 'package:provider/provider.dart';
 
 import '../../../core/router/app_router.dart';
@@ -121,7 +125,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
           // Title
           Text(
+<<<<<<< HEAD
             'Admin Access',
+=======
+            'auth.admin_access'.tr(),
+>>>>>>> new
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -137,7 +145,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
+<<<<<<< HEAD
               'Administrator Login',
+=======
+              'auth.admin_login_badge'.tr(),
+>>>>>>> new
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -178,7 +190,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         return null;
       },
       decoration: InputDecoration(
+<<<<<<< HEAD
         hintText: 'Email or Phone Number',
+=======
+        hintText: 'auth.email_phone_hint'.tr(),
+>>>>>>> new
         prefixIcon: const Icon(
           Icons.mail_outline_rounded,
           color: AppColors.textHint,
@@ -223,7 +239,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         return null;
       },
       decoration: InputDecoration(
+<<<<<<< HEAD
         hintText: 'Password',
+=======
+        hintText: 'auth.password_hint'.tr(),
+>>>>>>> new
         prefixIcon: const Icon(
           Icons.lock_outline_rounded,
           color: AppColors.textHint,
@@ -295,7 +315,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                     ),
                   )
                 : Text(
+<<<<<<< HEAD
                     'Login',
+=======
+                    'auth.login_title'.tr(),
+>>>>>>> new
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
@@ -317,7 +341,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
           color: AppColors.textSecondary,
         ),
         label: Text(
+<<<<<<< HEAD
           'Back to Farmer Login',
+=======
+          'auth.back_to_farmer'.tr(),
+>>>>>>> new
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w500,

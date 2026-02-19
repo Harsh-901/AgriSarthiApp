@@ -2,11 +2,22 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+<<<<<<< HEAD
+=======
+import '../config/api_config.dart';
+>>>>>>> new
 
 /// Service for communicating with the Django backend (AgriSarthi)
 /// Uses Django JWT auth tokens (separate from Supabase auth)
 class ApiService {
+<<<<<<< HEAD
   static const String baseUrl = 'https://agrisarthi.onrender.com';
+=======
+  // For production: https://agrisarthi.onrender.com
+  // For local development on emulator: http://10.0.2.2:8000
+  // For local development on physical device: use your computer's IP (e.g., http://192.168.1.5:8000)
+  static String get baseUrl => ApiConfig.baseUrl;
+>>>>>>> new
 
   static const String _accessTokenKey = 'django_access_token';
   static const String _refreshTokenKey = 'django_refresh_token';
@@ -23,6 +34,10 @@ class ApiService {
 
   /// Whether we have a Django auth token
   bool get isAuthenticated => _accessToken != null;
+<<<<<<< HEAD
+=======
+  String? get accessToken => _accessToken;
+>>>>>>> new
   String? get djangoFarmerId => _djangoFarmerId;
 
   /// Initialize - load saved tokens
@@ -65,14 +80,22 @@ class ApiService {
         Uri.parse('$baseUrl/api/auth/login/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'phone': phone}),
+<<<<<<< HEAD
       );
+=======
+      ).timeout(const Duration(seconds: 10));
+>>>>>>> new
 
       final data = jsonDecode(response.body);
       debugPrint('ApiService: Send OTP response: $data');
       return data;
     } catch (e) {
       debugPrint('ApiService: Send OTP error: $e');
+<<<<<<< HEAD
       return {'success': false, 'message': 'Network error: $e'};
+=======
+      return {'success': false, 'message': 'Connection timed out or failed'};
+>>>>>>> new
     }
   }
 
@@ -84,7 +107,11 @@ class ApiService {
         Uri.parse('$baseUrl/api/auth/verify/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'phone': phone, 'otp': otp}),
+<<<<<<< HEAD
       );
+=======
+      ).timeout(const Duration(seconds: 10));
+>>>>>>> new
 
       final data = jsonDecode(response.body);
       debugPrint('ApiService: Verify OTP response: ${data['success']}');
@@ -100,7 +127,11 @@ class ApiService {
       return data;
     } catch (e) {
       debugPrint('ApiService: Verify OTP error: $e');
+<<<<<<< HEAD
       return {'success': false, 'message': 'Network error: $e'};
+=======
+      return {'success': false, 'message': 'Connection timed out'};
+>>>>>>> new
     }
   }
 
@@ -113,7 +144,11 @@ class ApiService {
         Uri.parse('$baseUrl/api/auth/refresh/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'refresh_token': _refreshToken}),
+<<<<<<< HEAD
       );
+=======
+      ).timeout(const Duration(seconds: 5));
+>>>>>>> new
 
       final data = jsonDecode(response.body);
       if (data['success'] == true && data['data'] != null) {
@@ -144,7 +179,11 @@ class ApiService {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $_accessToken',
         },
+<<<<<<< HEAD
       );
+=======
+      ).timeout(const Duration(seconds: 15));
+>>>>>>> new
 
       // If 401, try refreshing token
       if (response.statusCode == 401) {
@@ -156,7 +195,11 @@ class ApiService {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $_accessToken',
             },
+<<<<<<< HEAD
           );
+=======
+          ).timeout(const Duration(seconds: 15));
+>>>>>>> new
         } else {
           return {
             'success': false,
@@ -168,7 +211,11 @@ class ApiService {
       return jsonDecode(response.body);
     } catch (e) {
       debugPrint('ApiService: GET $endpoint error: $e');
+<<<<<<< HEAD
       return {'success': false, 'message': 'Network error: $e'};
+=======
+      return {'success': false, 'message': 'Connection error or timeout'};
+>>>>>>> new
     }
   }
 
@@ -187,7 +234,11 @@ class ApiService {
           'Authorization': 'Bearer $_accessToken',
         },
         body: jsonEncode(body),
+<<<<<<< HEAD
       );
+=======
+      ).timeout(const Duration(seconds: 15));
+>>>>>>> new
 
       // If 401, try refreshing token
       if (response.statusCode == 401) {
@@ -200,7 +251,11 @@ class ApiService {
               'Authorization': 'Bearer $_accessToken',
             },
             body: jsonEncode(body),
+<<<<<<< HEAD
           );
+=======
+          ).timeout(const Duration(seconds: 15));
+>>>>>>> new
         } else {
           return {
             'success': false,
@@ -212,7 +267,11 @@ class ApiService {
       return jsonDecode(response.body);
     } catch (e) {
       debugPrint('ApiService: POST $endpoint error: $e');
+<<<<<<< HEAD
       return {'success': false, 'message': 'Network error: $e'};
+=======
+      return {'success': false, 'message': 'Connection error or timeout'};
+>>>>>>> new
     }
   }
 }

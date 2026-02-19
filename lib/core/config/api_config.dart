@@ -1,6 +1,11 @@
 /// API Configuration for the AgriSarthi Backend
 class ApiConfig {
+<<<<<<< HEAD
   // Base URL for the deployed backend
+=======
+  // Base URL for the backend
+  // POINTING TO PRODUCTION DEPLOYMENT
+>>>>>>> new
   static const String baseUrl = 'https://agrisarthi.onrender.com';
 
   // API Endpoints

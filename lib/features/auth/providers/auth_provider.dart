@@ -1,5 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
+=======
+import '../../../core/config/api_config.dart';
+import '../../../core/services/api_service.dart';
+>>>>>>> new
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -35,6 +40,10 @@ class AuthProvider extends ChangeNotifier {
   bool _isAdminLoggedIn = false;
   String? _adminName;
   String? _adminId;
+<<<<<<< HEAD
+=======
+  bool _isDjangoAuthenticated = false;
+>>>>>>> new
 
   // Getters
   AuthState get state => _state;
@@ -51,6 +60,10 @@ class AuthProvider extends ChangeNotifier {
   bool get isProfileComplete => _isProfileComplete;
   User? get supabaseUser => _supabaseUser;
   bool get isInitialized => _isInitialized;
+<<<<<<< HEAD
+=======
+  bool get isDjangoAuthenticated => _isDjangoAuthenticated;
+>>>>>>> new
 
   final SupabaseClient _supabase = SupabaseConfig.client;
   final FarmerService _farmerService = FarmerService();
@@ -93,6 +106,10 @@ class AuthProvider extends ChangeNotifier {
         await _checkFarmerProfile();
 
         _state = AuthState.authenticated;
+<<<<<<< HEAD
+=======
+        syncWithDjango();
+>>>>>>> new
       } else {
         debugPrint('AuthProvider: No existing session');
         _state = AuthState.unauthenticated;
@@ -128,6 +145,13 @@ class AuthProvider extends ChangeNotifier {
 
         _state = AuthState.authenticated;
         await _saveLocalData();
+<<<<<<< HEAD
+=======
+        
+        // Sync with Django backend
+        syncWithDjango();
+        
+>>>>>>> new
         notifyListeners();
       } else if (data.event == AuthChangeEvent.signedOut) {
         debugPrint('AuthProvider: User signed out');
@@ -468,4 +492,68 @@ class AuthProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
   }
+<<<<<<< HEAD
+=======
+
+  bool _isSyncing = false;
+  bool get isSyncing => _isSyncing;
+
+  /// Manually sync Supabase auth with Django backend
+  Future<void> syncWithDjango() async {
+    if (_isSyncing) return;
+    
+    final phone = _phoneNumber ?? _supabaseUser?.phone;
+    if (phone == null || phone.isEmpty) return;
+
+    _isSyncing = true;
+    notifyListeners();
+
+    // Remove + prefix if present
+    String cleanPhone = phone;
+    if (phone.startsWith('+91')) {
+      cleanPhone = phone.substring(3);
+    } else if (phone.startsWith('+')) {
+      cleanPhone = phone.substring(1);
+    }
+
+    debugPrint('AuthProvider: Syncing with Django for $cleanPhone...');
+    final apiService = ApiService();
+    
+    // 1. Send OTP (returns demo_otp in backend for dev/hackathon)
+    try {
+      final sendResult = await apiService.sendDjangoOtp(cleanPhone);
+      if (sendResult['success'] == true) {
+        final demoOtp = sendResult['data']?['demo_otp'];
+        if (demoOtp != null) {
+          // 2. Automatically verify using the demo OTP
+          debugPrint('AuthProvider: Auto-verifying Django with demo OTP: $demoOtp');
+          final verifyResult = await apiService.verifyDjangoOtp(cleanPhone, demoOtp.toString());
+          if (verifyResult['success'] == true) {
+            debugPrint('AuthProvider: ✅ Django sync successful!');
+            _isDjangoAuthenticated = true;
+            _errorMessage = null;
+          } else {
+            debugPrint('AuthProvider: ❌ Django verification failed: ${verifyResult['message']}');
+            _isDjangoAuthenticated = false;
+            _errorMessage = 'Django Auth: ${verifyResult['message']}';
+          }
+        } else {
+          debugPrint('AuthProvider: ⚠️ No demo OTP found in response');
+          _isDjangoAuthenticated = false;
+        }
+      } else {
+        debugPrint('AuthProvider: ❌ Django OTP send failed: ${sendResult['message']}');
+        _isDjangoAuthenticated = false;
+        _errorMessage = 'Backend Connection Failed';
+      }
+    } catch (e) {
+      debugPrint('AuthProvider: ❌ Django sync error: $e');
+      _isDjangoAuthenticated = false;
+      _errorMessage = 'Connection Error: $e';
+    } finally {
+      _isSyncing = false;
+      notifyListeners();
+    }
+  }
+>>>>>>> new
 }
