@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gemma/flutter_gemma.dart';
 
 import 'core/config/supabase_config.dart';
+import 'core/config/api_config.dart';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
 import 'features/auth/providers/auth_provider.dart';
@@ -15,6 +16,14 @@ import 'package:easy_localization/easy_localization.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
+
+  // Initialize flutter_gemma BEFORE any plugin usage.
+  // Token is injected from .env at build time via --dart-define-from-file=.env
+  await FlutterGemma.initialize(
+    huggingFaceToken: ApiConfig.huggingFaceToken.isNotEmpty
+        ? ApiConfig.huggingFaceToken
+        : null,
+  );
 
   // Initialize Supabase with session persistence
   await Supabase.initialize(

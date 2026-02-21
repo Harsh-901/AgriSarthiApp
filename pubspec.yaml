@@ -29,6 +29,12 @@ dependencies:
   easy_localization: ^3.0.8
   translator: ^1.0.4+1
   permission_handler: ^12.0.1
+  webview_flutter: ^4.10.0
+  flutter_gemma: ^0.12.4
+  # On-device OCR — fully local, no network, works on Android & iOS
+  google_mlkit_text_recognition: ^0.14.0
+  # PDF rendering: convert PDF pages to images before OCR
+  pdfx: ^2.9.0
 
 dev_dependencies:
   flutter_test:
@@ -42,3 +48,4 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/translations/
+    - assets/scripts/

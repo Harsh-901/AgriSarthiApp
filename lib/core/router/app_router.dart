@@ -12,6 +12,7 @@ import '../../features/documents/screens/document_upload_screen.dart';
 import '../../features/profile/screens/farmer_profile_screen.dart';
 import '../../features/applications/screens/applications_screen.dart';
 import '../../features/schemes/screens/manage_schemes_screen.dart';
+import '../../features/autofill/screens/scheme_webview_screen.dart';
 
 class AppRouter {
   static const String splash = '/';
@@ -25,6 +26,7 @@ class AppRouter {
   static const String farmerProfile = '/farmer-profile';
   static const String applications = '/applications';
   static const String manageSchemes = '/manage-schemes';
+  static const String schemeWebview = '/scheme-webview';
 
   static final GoRouter router = GoRouter(
     initialLocation: splash,
@@ -83,6 +85,16 @@ class AppRouter {
         path: manageSchemes,
         name: 'manageSchemes',
         builder: (context, state) => const ManageSchemesScreen(),
+      ),
+      GoRoute(
+        path: schemeWebview,
+        name: 'schemeWebview',
+        builder: (context, state) {
+          final url =
+              state.uri.queryParameters['url'] ?? 'https://pmkisan.gov.in/';
+          final name = state.uri.queryParameters['name'] ?? 'Government Portal';
+          return SchemeWebviewScreen(url: url, schemeName: name);
+        },
       ),
     ],
   );

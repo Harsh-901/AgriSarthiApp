@@ -12,6 +12,7 @@ class SchemeModel {
   final String deadline;
   final SchemeStatus status;
   final String? description;
+  final String? applicationUrl; // Portal URL for the WebView AutoFill agent
 
   SchemeModel({
     required this.id,
@@ -20,6 +21,7 @@ class SchemeModel {
     required this.deadline,
     required this.status,
     this.description,
+    this.applicationUrl,
   });
 
   factory SchemeModel.fromJson(Map<String, dynamic> json) {
@@ -38,11 +40,11 @@ class SchemeModel {
     return SchemeModel(
       id: json['id']?.toString() ?? '',
       name: json['name'] ?? 'Unknown Scheme',
-      // Map 'benefit' or 'description' from DB
       benefit: json['benefit'] ?? json['description'] ?? 'View details',
       deadline: json['deadline'] ?? 'Ongoing',
       status: status,
       description: json['description'],
+      applicationUrl: json['application_url'] as String?,
     );
   }
 
@@ -53,6 +55,7 @@ class SchemeModel {
     String? deadline,
     SchemeStatus? status,
     String? description,
+    String? applicationUrl,
   }) {
     return SchemeModel(
       id: id ?? this.id,
@@ -61,6 +64,7 @@ class SchemeModel {
       deadline: deadline ?? this.deadline,
       status: status ?? this.status,
       description: description ?? this.description,
+      applicationUrl: applicationUrl ?? this.applicationUrl,
     );
   }
 }

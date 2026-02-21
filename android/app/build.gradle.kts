@@ -24,7 +24,7 @@ android {
         applicationId = "com.example.yojana_wala"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -41,4 +41,10 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // ML Kit bundled model for Devanagari script recognition (needed by LocalOcrService)
+    // Without this the app crashes with NoClassDefFoundError at runtime.
+    implementation("com.google.mlkit:text-recognition-devanagari:16.0.1")
 }

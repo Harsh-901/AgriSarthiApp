@@ -509,7 +509,7 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
           _buildInfoRow('home.deadline'.tr(), scheme.deadline),
           const SizedBox(height: 8),
 
-          // Status Row with Apply Button
+          // Buttons: Apply (internal) + Apply Online (WebView AutoFill Agent)
           Row(
             children: [
               Text(
@@ -521,22 +521,59 @@ class _FarmerHomeScreenState extends State<FarmerHomeScreen> {
               const SizedBox(width: 8),
               _buildStatusBadge(scheme.status),
               const Spacer(),
-              // Apply Button
-              ElevatedButton(
-                onPressed: () => _applyForScheme(scheme),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              // Internal apply
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _applyForScheme(scheme),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.primary),
+                    foregroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: Text(
+                    'home.apply_button'.tr(),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 13),
                   ),
                 ),
-                child: Text(
-                  'home.apply_button'.tr(),
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(width: 10),
+              // AutoFill Agent → WebView
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    final portalUrl =
+                        (scheme.applicationUrl?.isNotEmpty ?? false)
+                            ? scheme.applicationUrl!
+                            : 'https://pmkisan.gov.in/';
+                    context.push(
+                      '${AppRouter.schemeWebview}'
+                      '?url=${Uri.encodeComponent(portalUrl)}'
+                      '&name=${Uri.encodeComponent(scheme.name)}',
+                    );
+                  },
+                  icon: const Icon(Icons.auto_fix_high_rounded, size: 15),
+                  label: const Text(
+                    'Auto Fill',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
                 ),
               ),
             ],
