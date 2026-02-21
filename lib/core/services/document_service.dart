@@ -1,7 +1,10 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:http/http.dart' as http;
 import '../config/supabase_config.dart';
+import '../config/api_config.dart';
 import 'farmer_service.dart';
 
 /// Document types for farmer verification
@@ -34,7 +37,7 @@ class DocumentType {
       case sevenTwelve:
         return '7/12 Extract';
       case eightA:
-        return '8A Document';
+        return '8A Extract';
       case bankPassbook:
         return 'Bank Passbook';
       case other:
@@ -42,6 +45,45 @@ class DocumentType {
       default:
         return type;
     }
+  }
+
+  static String getDescription(String type) {
+    switch (type) {
+      case aadhaar:
+        return 'We will extract your name, date of birth, and gender';
+      case sevenTwelve:
+        return 'We will extract your land size, village, and district';
+      default:
+        return '';
+    }
+  }
+}
+
+/// Model for OCR extraction result
+class OCRExtractionResult {
+  final bool success;
+  final Map<String, dynamic> extractedData;
+  final double confidence;
+  final bool documentUploaded;
+  final List<String> errors;
+
+  OCRExtractionResult({
+    required this.success,
+    required this.extractedData,
+    this.confidence = 0.0,
+    this.documentUploaded = false,
+    this.errors = const [],
+  });
+
+  factory OCRExtractionResult.fromJson(Map<String, dynamic> json) {
+    final data = json['data'] as Map<String, dynamic>? ?? {};
+    return OCRExtractionResult(
+      success: json['success'] ?? false,
+      extractedData: data['extracted'] as Map<String, dynamic>? ?? {},
+      confidence: (data['confidence'] ?? 0.0).toDouble(),
+      documentUploaded: data['document_uploaded'] ?? false,
+      errors: List<String>.from(json['errors'] ?? []),
+    );
   }
 }
 
@@ -62,8 +104,7 @@ class DocumentModel {
   });
 }
 
-/// Service for uploading documents to Supabase Storage
-/// Uses Option 2: Per-farmer buckets (farmer-{uuid})
+/// Service for document upload and OCR extraction
 class DocumentService {
   final SupabaseClient _supabase = SupabaseConfig.client;
   final FarmerService _farmerService = FarmerService();
@@ -81,12 +122,70 @@ class DocumentService {
     return '$_farmerBucketPrefix$farmerId';
   }
 
+  /// Get auth token for API calls
+  String? _getAuthToken() {
+    return _supabase.auth.currentSession?.accessToken;
+  }
+
+  /// Upload Aadhaar card and extract data via OCR
+  Future<OCRExtractionResult> uploadAndExtractAadhaar(File file) async {
+    return _uploadAndExtractOCR(file, 'aadhaar');
+  }
+
+  /// Upload 7/12 Extract and extract data via OCR
+  Future<OCRExtractionResult> uploadAndExtractSevenTwelve(File file) async {
+    return _uploadAndExtractOCR(file, 'seven-twelve');
+  }
+
+  /// Internal: Upload document and run OCR extraction
+  Future<OCRExtractionResult> _uploadAndExtractOCR(
+    File file,
+    String documentType,
+  ) async {
+    try {
+      final token = _getAuthToken();
+      if (token == null) {
+        throw Exception('Not authenticated');
+      }
+
+      final uri =
+          Uri.parse('${ApiConfig.baseUrl}/api/documents/ocr/$documentType/');
+
+      final request = http.MultipartRequest('POST', uri);
+      request.headers['Authorization'] = 'Bearer $token';
+      request.files.add(
+        await http.MultipartFile.fromPath('file', file.path),
+      );
+
+      debugPrint('DocumentService: Uploading $documentType for OCR...');
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      debugPrint(
+          'DocumentService: OCR response status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(response.body);
+        return OCRExtractionResult.fromJson(jsonResponse);
+      } else {
+        debugPrint('DocumentService: OCR error: ${response.body}');
+        return OCRExtractionResult(
+          success: false,
+          extractedData: {},
+          errors: ['Server error: ${response.statusCode}'],
+        );
+      }
+    } catch (e) {
+      debugPrint('DocumentService: OCR extraction failed: $e');
+      return OCRExtractionResult(
+        success: false,
+        extractedData: {},
+        errors: ['Failed to process document: $e'],
+      );
+    }
+  }
+
   /// Create a dedicated storage bucket for a farmer.
-  /// This should be called right after the farmer account is created
-  /// (after Supabase OTP login + profile save).
-  ///
-  /// Uses Supabase RPC function 'create_farmer_bucket' which runs with
-  /// SECURITY DEFINER privileges (service-role level) to create the bucket.
   Future<bool> createFarmerBucket(String farmerId) async {
     final bucketName = getBucketName(farmerId);
 
@@ -104,7 +203,7 @@ class DocumentService {
           'DocumentService: Bucket does not exist yet (expected). Error: $e');
     }
 
-    // Step 2: Try RPC function (most reliable - uses SECURITY DEFINER)
+    // Step 2: Try RPC function
     try {
       debugPrint('DocumentService: Calling RPC create_farmer_bucket...');
       final result = await _supabase.rpc('create_farmer_bucket', params: {
@@ -137,35 +236,7 @@ class DocumentService {
     return false;
   }
 
-  /// Ensure the per-farmer bucket exists.
-  /// Tries to create it if it doesn't exist.
-  Future<String> _ensureBucketExists(String farmerId) async {
-    final bucketName = getBucketName(farmerId);
-
-    try {
-      // 1. Try to list files to see if bucket exists and is accessible
-      await _supabase.storage.from(bucketName).list();
-      debugPrint(
-          'DocumentService: Bucket $bucketName exists and is accessible.');
-      return bucketName;
-    } catch (e) {
-      debugPrint(
-          'DocumentService: Bucket $bucketName missing. Attempting to create...');
-
-      // 2. Try to create via RPC first
-      final created = await createFarmerBucket(farmerId);
-      if (created) {
-        return bucketName;
-      }
-
-      // 3. If all fails, throw clear error
-      throw Exception(
-          'Bucket "$bucketName" not found and could not be created automatically.\n'
-          'Please ensure the create_farmer_bucket RPC function exists in your Supabase project.');
-    }
-  }
-
-  /// Upload all documents to the farmer's specific bucket
+  /// Upload documents to storage (simplified for 2 docs)
   Future<Map<String, dynamic>> uploadDocuments(
     Map<String, File> documents, {
     String? otherDocumentName,
@@ -181,14 +252,6 @@ class DocumentService {
           'Farmer profile not found. Please complete your profile first.');
     }
 
-    // Validate compulsory documents
-    for (final docType in DocumentType.compulsory) {
-      if (!documents.containsKey(docType)) {
-        throw Exception(
-            'Missing required document: ${DocumentType.getDisplayName(docType)}');
-      }
-    }
-
     // Ensure bucket exists
     final bucketName = await _ensureBucketExists(farmerId);
     debugPrint('DocumentService: Uploading to bucket: $bucketName');
@@ -202,30 +265,24 @@ class DocumentService {
         final docType = entry.key;
         final file = entry.value;
 
-        // Determine file extension
         final ext = file.path.split('.').last.toLowerCase();
         final fileName = '$docType.$ext';
-
-        // In per-farmer bucket, file is at root
         final storagePath = fileName;
 
         debugPrint(
             'DocumentService: Uploading $docType to $bucketName/$storagePath');
 
-        // Read file bytes
         final fileBytes = await file.readAsBytes();
 
-        // Upload to Supabase Storage
         await _supabase.storage.from(bucketName).uploadBinary(
               storagePath,
               fileBytes,
               fileOptions: FileOptions(
                 contentType: _getContentType(ext),
-                upsert: true, // Overwrite if exists
+                upsert: true,
               ),
             );
 
-        // Get public URL
         final url =
             _supabase.storage.from(bucketName).getPublicUrl(storagePath);
 
@@ -249,6 +306,30 @@ class DocumentService {
       'urls': uploadedDocs,
       if (errors.isNotEmpty) 'errors': errors,
     };
+  }
+
+  /// Ensure bucket exists
+  Future<String> _ensureBucketExists(String farmerId) async {
+    final bucketName = getBucketName(farmerId);
+
+    try {
+      await _supabase.storage.from(bucketName).list();
+      debugPrint(
+          'DocumentService: Bucket $bucketName exists and is accessible.');
+      return bucketName;
+    } catch (e) {
+      debugPrint(
+          'DocumentService: Bucket $bucketName missing. Attempting to create...');
+
+      final created = await createFarmerBucket(farmerId);
+      if (created) {
+        return bucketName;
+      }
+
+      throw Exception(
+          'Bucket "$bucketName" not found and could not be created automatically.\n'
+          'Please ensure the create_farmer_bucket RPC function exists in your Supabase project.');
+    }
   }
 
   /// Get content type for file extension
@@ -279,7 +360,6 @@ class DocumentService {
     final documents = <DocumentModel>[];
 
     try {
-      // List files in the farmer's bucket
       final files = await _supabase.storage.from(bucketName).list();
 
       for (final file in files) {

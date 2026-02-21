@@ -1,0 +1,127 @@
+Analyzing FrontEnd2.0...                                        
+
+   info - Use 'const' for final variables initialized to a constant value - generate_sarvam_translations.dart:7:3 - prefer_const_declarations
+   info - Don't invoke 'print' in production code - generate_sarvam_translations.dart:11:5 - avoid_print
+   info - Don't invoke 'print' in production code - generate_sarvam_translations.dart:33:5 - avoid_print
+   info - Don't invoke 'print' in production code - generate_sarvam_translations.dart:42:5 - avoid_print
+   info - Don't invoke 'print' in production code - generate_sarvam_translations.dart:57:7 - avoid_print
+   info - Don't invoke 'print' in production code - generate_sarvam_translations.dart:59:7 - avoid_print
+   info - Don't invoke 'print' in production code - generate_sarvam_translations.dart:86:9 - avoid_print
+   info - Unnecessary use of double quotes - generate_sarvam_translations.dart:113:9 - prefer_single_quotes
+   info - Unnecessary use of double quotes - generate_sarvam_translations.dart:114:9 - prefer_single_quotes
+   info - Unnecessary use of double quotes - generate_sarvam_translations.dart:114:33 - prefer_single_quotes
+   info - Unnecessary use of double quotes - generate_sarvam_translations.dart:115:9 - prefer_single_quotes
+   info - Unnecessary use of double quotes - generate_sarvam_translations.dart:116:9 - prefer_single_quotes
+   info - Unnecessary use of double quotes - generate_sarvam_translations.dart:116:18 - prefer_single_quotes
+   info - Unnecessary use of double quotes - generate_sarvam_translations.dart:117:9 - prefer_single_quotes
+   info - Unnecessary use of double quotes - generate_sarvam_translations.dart:117:27 - prefer_single_quotes
+   info - Unnecessary use of double quotes - generate_sarvam_translations.dart:118:9 - prefer_single_quotes
+   info - Unnecessary use of double quotes - generate_sarvam_translations.dart:118:17 - prefer_single_quotes
+   info - Don't invoke 'print' in production code - generate_sarvam_translations.dart:126:7 - avoid_print
+   info - Don't invoke 'print' in production code - generate_sarvam_translations.dart:130:5 - avoid_print
+   info - Don't invoke 'print' in production code - generate_translations.dart:22:5 - avoid_print
+   info - Don't invoke 'print' in production code - generate_translations.dart:30:5 - avoid_print
+   info - Don't invoke 'print' in production code - generate_translations.dart:41:7 - avoid_print
+   info - Don't invoke 'print' in production code - generate_translations.dart:43:7 - avoid_print
+   info - Don't invoke 'print' in production code - generate_translations.dart:70:9 - avoid_print
+warning - Unused import: 'package:flutter/material.dart' - lib\core\router\app_router.dart:1:8 - unused_import
+   info - Statements in an if should be enclosed in a block - lib\core\services\admin_service.dart:219:9 - curly_braces_in_flow_control_structures
+   info - Unnecessary use of double quotes - lib\core\services\translation_service.dart:68:11 - prefer_single_quotes
+   info - Unnecessary use of double quotes - lib\core\services\translation_service.dart:69:11 - prefer_single_quotes
+   info - Unnecessary use of double quotes - lib\core\services\translation_service.dart:69:35 - prefer_single_quotes
+   info - Unnecessary use of double quotes - lib\core\services\translation_service.dart:70:11 - prefer_single_quotes
+   info - Unnecessary use of double quotes - lib\core\services\translation_service.dart:71:11 - prefer_single_quotes
+   info - Unnecessary use of double quotes - lib\core\services\translation_service.dart:71:20 - prefer_single_quotes
+   info - The import of 'dart:typed_data' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/foundation.dart' - lib\core\services\voice_assistant_service.dart:3:8 - unnecessary_import
+   info - Use 'const' for final variables initialized to a constant value - lib\core\services\voice_assistant_service.dart:70:7 - prefer_const_declarations
+   info - Use 'const' for final variables initialized to a constant value - lib\core\services\voice_assistant_service.dart:268:7 - prefer_const_declarations
+   info - Use 'const' with the constructor to improve performance - lib\core\theme\app_theme.dart:41:20 - prefer_const_constructors
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\applications\screens\applications_screen.dart:269:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\applications\screens\applications_screen.dart:312:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\applications\screens\applications_screen.dart:424:24 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\applications\screens\applications_screen.dart:426:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\applications\screens\applications_screen.dart:488:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\applications\screens\applications_screen.dart:516:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\applications\screens\applications_screen.dart:542:30 - deprecated_member_use
+   info - Use 'const' with the constructor to improve performance - lib\features\applications\screens\applications_screen.dart:596:23 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\applications\screens\applications_screen.dart:608:21 - prefer_const_constructors
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\applications\screens\applications_screen.dart:628:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\applications\screens\applications_screen.dart:631:61 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\applications\screens\applications_screen.dart:690:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\applications\screens\applications_screen.dart:752:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\applications\screens\applications_screen.dart:910:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\applications\screens\applications_screen.dart:913:54 - deprecated_member_use
+warning - Unused import: '../../../core/config/api_config.dart' - lib\features\auth\providers\auth_provider.dart:3:8 - unused_import
+   info - Unnecessary braces in a string interpolation - lib\features\auth\providers\auth_provider.dart:165:54 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\features\auth\providers\auth_provider.dart:165:77 - unnecessary_brace_in_string_interps
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\auth\screens\admin_login_screen.dart:109:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\auth\screens\farmer_login_screen.dart:272:63 - deprecated_member_use
+warning - The value of the local variable 'centerY' isn't used - lib\features\auth\widgets\leaf_logo.dart:53:18 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\documents\screens\document_upload_screen.dart:332:24 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\documents\screens\document_upload_screen.dart:334:43 - deprecated_member_use
+warning - The value of the local variable 'labels' isn't used - lib\features\documents\screens\document_upload_screen.dart:651:17 - unused_local_variable
+   info - Use 'const' with the constructor to improve performance - lib\features\documents\screens\document_upload_screen.dart:996:24 - prefer_const_constructors
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\documents\screens\document_upload_screen.dart:1089:38 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\documents\screens\document_upload_screen.dart:1099:42 - deprecated_member_use
+   info - Use 'const' with the constructor to improve performance - lib\features\documents\screens\document_upload_screen.dart:1170:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\documents\screens\document_upload_screen.dart:1175:26 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\documents\screens\document_upload_screen.dart:1249:24 - prefer_const_constructors
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\documents\screens\document_upload_screen.dart:1356:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\documents\screens\document_upload_screen.dart:1358:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\documents\screens\document_upload_screen.dart:1412:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\documents\screens\document_upload_screen.dart:1449:27 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\screens\admin_home_screen.dart:126:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\screens\admin_home_screen.dart:248:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\screens\admin_home_screen.dart:287:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\screens\admin_home_screen.dart:353:48 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\screens\admin_home_screen.dart:416:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\screens\admin_home_screen.dart:561:26 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\screens\admin_home_screen.dart:563:45 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\home\screens\admin_home_screen.dart:640:38 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\home\screens\admin_home_screen.dart:667:38 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\screens\farmer_home_screen.dart:485:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\screens\farmer_home_screen.dart:588:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\screens\farmer_home_screen.dart:598:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\screens\farmer_home_screen.dart:707:49 - deprecated_member_use
+   info - Use 'const' with the constructor to improve performance - lib\features\profile\screens\farmer_profile_form_screen.dart:29:12 - prefer_const_constructors
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\profile\screens\farmer_profile_screen.dart:124:51 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\profile\screens\farmer_profile_screen.dart:181:31 - use_build_context_synchronously
+   info - Use 'const' with the constructor to improve performance - lib\features\profile\screens\farmer_profile_screen.dart:217:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\features\profile\screens\farmer_profile_screen.dart:225:20 - prefer_const_constructors
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\profile\screens\farmer_profile_screen.dart:242:33 - deprecated_member_use
+   info - Use 'const' with the constructor to improve performance - lib\features\schemes\screens\manage_schemes_screen.dart:302:13 - prefer_const_constructors
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\schemes\screens\manage_schemes_screen.dart:342:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\schemes\screens\manage_schemes_screen.dart:366:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\schemes\screens\manage_schemes_screen.dart:367:39 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\schemes\screens\manage_schemes_screen.dart:488:38 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\schemes\screens\manage_schemes_screen.dart:737:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\voice\widgets\voice_assistant_button.dart:82:21 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\voice\widgets\voice_assistant_button.dart:113:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\voice\widgets\voice_assistant_overlay.dart:35:41 - deprecated_member_use
+warning - Unused import: 'package:google_fonts/google_fonts.dart' - lib\main.dart:3:8 - unused_import
+   info - Don't invoke 'print' in production code - test_translator_script.dart:6:5 - avoid_print
+   info - Unnecessary use of double quotes - test_translator_script.dart:7:50 - prefer_single_quotes
+   info - Don't invoke 'print' in production code - test_translator_script.dart:8:5 - avoid_print
+   info - Unnecessary use of double quotes - test_translator_script.dart:8:11 - prefer_single_quotes
+   info - Unnecessary use of double quotes - test_translator_script.dart:10:46 - prefer_single_quotes
+   info - Don't invoke 'print' in production code - test_translator_script.dart:11:5 - avoid_print
+   info - Unnecessary use of double quotes - test_translator_script.dart:11:11 - prefer_single_quotes
+   info - Don't invoke 'print' in production code - test_translator_script.dart:13:5 - avoid_print
+   info - Don't invoke 'print' in production code - test_translator_script.dart:15:5 - avoid_print
+
+flutter : 108 issues found. 
+(ran in 93.3s)
+At line:1 char:1
++ flutter analyze 2>&1 | 
+Out-File -FilePath 
+_flutter_analyze.txt -Encod 
+...
++ ~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: (108 i  
+  ssues found. (ran in 93   
+ .3s):String) [], Remote    
+Exception
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 

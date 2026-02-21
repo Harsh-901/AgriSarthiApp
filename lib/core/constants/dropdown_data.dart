@@ -473,4 +473,45 @@ class DropdownData {
 
   // Old languages list - kept for backward compatibility
   static const List<String> languages = languageValues;
+  // ========== SEASONAL CROPS ==========
+  // These match the crops in the onboarding wizard
+
+  static const List<String> kharifCrops = [
+    'Rice',
+    'Soybean',
+    'Cotton',
+    'Groundnut',
+    'Bajra',
+    'Sugarcane',
+    'Maize',
+    'Tur Dal',
+  ];
+
+  static const List<String> rabiCrops = [
+    'Wheat',
+    'Jowar',
+    'Gram (Chana)',
+    'Onion',
+    'Mustard',
+  ];
+
+  static const List<String> zaidCrops = [
+    'Vegetables',
+    'Tomato',
+    'Watermelon',
+  ];
+
+  static const List<String> cashCrops = [
+    'Turmeric',
+    'Grapes',
+    'Pomegranate',
+    'Banana',
+  ];
+
+  static const List<String> allCrops = [
+    ...kharifCrops,
+    ...rabiCrops,
+    ...zaidCrops,
+    ...cashCrops,
+  ];
 }

@@ -13,7 +13,14 @@ class ApiConfig {
   static const String authLogout = '$baseUrl/api/auth/logout/';
 
   static const String farmersProfile = '$baseUrl/api/farmers/profile/';
+  static const String farmersAutoFill =
+      '$baseUrl/api/farmers/profile/auto-fill/';
   static const String documents = '$baseUrl/api/documents/';
+
+  // OCR extraction endpoints
+  static const String ocrAadhaar = '$baseUrl/api/documents/ocr/aadhaar/';
+  static const String ocrSevenTwelve =
+      '$baseUrl/api/documents/ocr/seven-twelve/';
 
   // Helper to get farmer-specific document endpoint
   static String farmerDocuments(String farmerId) =>

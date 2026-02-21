@@ -7,6 +7,7 @@ import '../../features/auth/screens/farmer_login_screen.dart';
 import '../../features/auth/screens/admin_login_screen.dart';
 import '../../features/home/screens/farmer_home_screen.dart';
 import '../../features/home/screens/admin_home_screen.dart';
+import '../../features/home/screens/admin_application_view_screen.dart';
 import '../../features/profile/screens/farmer_profile_form_screen.dart';
 import '../../features/documents/screens/document_upload_screen.dart';
 import '../../features/profile/screens/farmer_profile_screen.dart';
@@ -25,7 +26,7 @@ class AppRouter {
   static const String farmerProfile = '/farmer-profile';
   static const String applications = '/applications';
   static const String manageSchemes = '/manage-schemes';
-
+  static const String adminApplicationView = '/admin-application-view';
   static final GoRouter router = GoRouter(
     initialLocation: splash,
     routes: [
@@ -83,6 +84,14 @@ class AppRouter {
         path: manageSchemes,
         name: 'manageSchemes',
         builder: (context, state) => const ManageSchemesScreen(),
+      ),
+      GoRoute(
+        path: adminApplicationView,
+        name: 'adminApplicationView',
+        builder: (context, state) {
+          final applicationId = state.extra as String;
+          return AdminApplicationViewScreen(applicationId: applicationId);
+        },
       ),
     ],
   );

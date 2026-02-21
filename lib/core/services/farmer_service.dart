@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:http/http.dart' as http;
 import '../config/supabase_config.dart';
+import '../config/api_config.dart';
 
 class FarmerProfile {
   final String? id;
@@ -11,7 +14,13 @@ class FarmerProfile {
   final String village;
   final double landSize;
   final String primaryCrop;
+  final List<String> crops;
   final String preferredLanguage;
+  final String? dateOfBirth;
+  final String? gender;
+  final String? aadhaarLastFour;
+  final String? surveyNumber;
+  final int? age;
 
   FarmerProfile({
     this.id,
@@ -22,7 +31,13 @@ class FarmerProfile {
     required this.village,
     required this.landSize,
     required this.primaryCrop,
+    this.crops = const [],
     required this.preferredLanguage,
+    this.dateOfBirth,
+    this.gender,
+    this.aadhaarLastFour,
+    this.surveyNumber,
+    this.age,
   });
 
   Map<String, dynamic> toJson() {
@@ -34,11 +49,30 @@ class FarmerProfile {
       'village': village,
       'land_size': landSize,
       'crop_type': primaryCrop,
+      'crops': crops,
       'language': preferredLanguage,
+      if (dateOfBirth != null) 'date_of_birth': dateOfBirth,
+      if (gender != null) 'gender': gender,
+      if (aadhaarLastFour != null) 'aadhaar_last_four': aadhaarLastFour,
+      if (surveyNumber != null) 'survey_number': surveyNumber,
     };
   }
 
   factory FarmerProfile.fromJson(Map<String, dynamic> json) {
+    // Parse crops - could be a JSON string or a list
+    List<String> parseCrops(dynamic cropsData) {
+      if (cropsData == null) return [];
+      if (cropsData is List) return cropsData.cast<String>();
+      if (cropsData is String) {
+        try {
+          final parsed = jsonDecode(cropsData);
+          if (parsed is List) return parsed.cast<String>();
+        } catch (_) {}
+        return [cropsData];
+      }
+      return [];
+    }
+
     return FarmerProfile(
       id: json['id']?.toString(),
       phoneNumber: json['phone'] ?? '',
@@ -48,7 +82,13 @@ class FarmerProfile {
       village: json['village'] ?? '',
       landSize: (json['land_size'] ?? 0).toDouble(),
       primaryCrop: json['crop_type'] ?? '',
+      crops: parseCrops(json['crops']),
       preferredLanguage: json['language'] ?? '',
+      dateOfBirth: json['date_of_birth']?.toString(),
+      gender: json['gender']?.toString(),
+      aadhaarLastFour: json['aadhaar_last_four']?.toString(),
+      surveyNumber: json['survey_number']?.toString(),
+      age: json['age'] as int? ?? json['calculated_age'] as int?,
     );
   }
 
@@ -67,16 +107,20 @@ class FarmerService {
     if (user == null || user.phone == null) return null;
 
     String phone = user.phone!.replaceAll(RegExp(r'[\s\-\(\)\+]'), '');
-    
+
     // Standardize Indian numbers: 10 digits
     if (phone.startsWith('91') && phone.length == 12) {
       phone = phone.substring(2);
     } else if (phone.length > 10) {
-      // Fallback: take last 10 digits
       phone = phone.substring(phone.length - 10);
     }
-    
+
     return phone;
+  }
+
+  /// Get auth token
+  String? _getAuthToken() {
+    return _supabase.auth.currentSession?.accessToken;
   }
 
   /// Get current user's farmer profile from Supabase
@@ -164,6 +208,87 @@ class FarmerService {
     } catch (e) {
       debugPrint('FarmerService: Error saving profile - $e');
       throw Exception('Failed to save profile: $e');
+    }
+  }
+
+  /// Auto-fill farmer profile using OCR-extracted data + crop selection
+  /// Calls the backend /api/farmers/profile/auto-fill/ endpoint
+  Future<FarmerProfile?> autoFillProfile({
+    required Map<String, dynamic> aadhaarData,
+    required Map<String, dynamic> sevenTwelveData,
+    required List<String> selectedCrops,
+    String language = 'hindi',
+  }) async {
+    try {
+      final token = _getAuthToken();
+      if (token == null) {
+        throw Exception('Not authenticated');
+      }
+
+      // Merge OCR data with user selections
+      final payload = <String, dynamic>{
+        // From Aadhaar
+        if (aadhaarData['name'] != null &&
+            aadhaarData['name'].toString().isNotEmpty)
+          'name': aadhaarData['name'],
+        if (aadhaarData['date_of_birth'] != null &&
+            aadhaarData['date_of_birth'].toString().isNotEmpty)
+          'date_of_birth': aadhaarData['date_of_birth'],
+        if (aadhaarData['gender'] != null &&
+            aadhaarData['gender'].toString().isNotEmpty)
+          'gender': aadhaarData['gender'],
+        if (aadhaarData['aadhaar_number_masked'] != null)
+          'aadhaar_last_four': aadhaarData['aadhaar_number_masked']
+              .toString()
+              .replaceAll(RegExp(r'[^0-9]'), ''),
+
+        // From 7/12
+        if (sevenTwelveData['state'] != null &&
+            sevenTwelveData['state'].toString().isNotEmpty)
+          'state': sevenTwelveData['state'],
+        if (sevenTwelveData['district'] != null &&
+            sevenTwelveData['district'].toString().isNotEmpty)
+          'district': sevenTwelveData['district'],
+        if (sevenTwelveData['village'] != null &&
+            sevenTwelveData['village'].toString().isNotEmpty)
+          'village': sevenTwelveData['village'],
+        if (sevenTwelveData['land_size'] != null &&
+            (sevenTwelveData['land_size'] as num) > 0)
+          'land_size': sevenTwelveData['land_size'],
+        if (sevenTwelveData['survey_number'] != null &&
+            sevenTwelveData['survey_number'].toString().isNotEmpty)
+          'survey_number': sevenTwelveData['survey_number'],
+
+        // User selections
+        'crops': selectedCrops,
+        'language': language,
+      };
+
+      debugPrint('FarmerService: Auto-filling profile with: $payload');
+
+      final response = await http.post(
+        Uri.parse(ApiConfig.farmersAutoFill),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(payload),
+      );
+
+      debugPrint('FarmerService: Auto-fill response: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        if (jsonResponse['success'] == true && jsonResponse['data'] != null) {
+          return FarmerProfile.fromJson(jsonResponse['data']);
+        }
+      }
+
+      debugPrint('FarmerService: Auto-fill failed: ${response.body}');
+      return null;
+    } catch (e) {
+      debugPrint('FarmerService: Error auto-filling profile: $e');
+      throw Exception('Failed to auto-fill profile: $e');
     }
   }
 

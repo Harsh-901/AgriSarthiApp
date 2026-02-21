@@ -133,15 +133,36 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                             _buildProfileField('Full Name', _profile!.fullName),
                             _buildProfileField(
                                 'Phone Number', '+91 ${_profile!.phoneNumber}'),
+                            if (_profile!.dateOfBirth != null &&
+                                _profile!.dateOfBirth!.isNotEmpty)
+                              _buildProfileField(
+                                  'Date of Birth', _profile!.dateOfBirth!),
+                            if (_profile!.age != null)
+                              _buildProfileField(
+                                  'Age', '${_profile!.age} years'),
+                            if (_profile!.gender != null &&
+                                _profile!.gender!.isNotEmpty)
+                              _buildProfileField(
+                                  'Gender',
+                                  _profile!.gender![0].toUpperCase() +
+                                      _profile!.gender!.substring(1)),
                             _buildProfileField('Village', _profile!.village),
                             _buildProfileField('District', _profile!.district),
                             _buildProfileField('State', _profile!.state),
-                            _buildProfileField('Selected Language',
-                                _profile!.preferredLanguage),
-                            _buildProfileField(
-                                'Primary Crop', _profile!.primaryCrop),
                             _buildProfileField(
                                 'Land Size', '${_profile!.landSize} Acres'),
+                            if (_profile!.surveyNumber != null &&
+                                _profile!.surveyNumber!.isNotEmpty)
+                              _buildProfileField(
+                                  'Survey Number', _profile!.surveyNumber!),
+                            if (_profile!.crops.isNotEmpty)
+                              _buildProfileField(
+                                  'Crops', _profile!.crops.join(', '))
+                            else if (_profile!.primaryCrop.isNotEmpty)
+                              _buildProfileField(
+                                  'Primary Crop', _profile!.primaryCrop),
+                            _buildProfileField('Selected Language',
+                                _profile!.preferredLanguage),
                           ],
                         ),
                       ),
